@@ -1,0 +1,32 @@
+.swagger-ui .topbar {
+    background-color: #1a1a2e !important;
+}
+
+.swagger-ui .info .title {
+    color: #e94560 !important;
+}
+
+.swagger-ui .opblock-tag {
+    background: #16213e;
+    color: white !important;
+}
+
+.swagger-ui .btn.execute {
+    background-color: #0f3460 !important;
+}
+
+.swagger-ui .opblock.opblock-post {
+    border-color: #0f3460 !important;
+}
+
+.swagger-ui .opblock.opblock-get {
+    border-color: #1a5a73 !important;
+}
+
+.swagger-ui .opblock.opblock-put {
+    border-color: #9c6b01 !important;
+}
+
+.swagger-ui .opblock.opblock-delete {
+    border-color: #931a1a !important;
+}
