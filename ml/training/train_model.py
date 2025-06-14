@@ -47,7 +47,6 @@ def train_random_forest(X_train, y_train):
         max_depth=config['MAX_DEPTH'],
         random_state=config['RANDOM_STATE']
     )
-
     model.fit(X_train, y_train)
     return model
 
@@ -73,3 +72,23 @@ def main():
             test_size=config['TEST_SIZE'], 
             random_state=config['RANDOM_STATE']
         )
+        
+        # Train model
+        logger.info("Training Random Forest model...")
+        model = train_random_forest(X_train, y_train)
+        
+        # Evaluate model
+        y_pred = model.predict(X_test)
+        accuracy = accuracy_score(y_test, y_pred)
+        logger.info(f"Model accuracy: {accuracy:.2f}")
+        logger.info("\nClassification Report:\n" + classification_report(y_test, y_pred))
+        
+        # Save model
+        save_model(model, config['MODEL_SAVE_PATH'])
+        
+    except Exception as e:
+        logger.error(f"Error in training pipeline: {e}")
+        raise
+
+if __name__ == "__main__":
+    main()
