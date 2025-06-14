@@ -81,3 +81,82 @@ class ThreatDetector:
             logger.error(f"Failed to load models: {str(e)}")
             print(colored("[ERROR] ", 'red') + f"Model loading failed: {str(e)}")
             raise
+
+    def start_heartbeat(self):
+        """Periodic status updates"""
+        def heartbeat():
+            while self.running:
+                time.sleep(Config.HEARTBEAT_INTERVAL)
+                status = (
+                    f"Processed {self.message_count} messages | "
+                    f"Active alerts: {len(self.alert_history)} | "
+                    f"Last alert: {self.alert_history[-1].timestamp if self.alert_history else 'Never'}"
+                )
+                print(colored(f"[STATUS] {datetime.now().isoformat()} - {status}", 'blue'))
+                logger.info(status)
+        
+        threading.Thread(target=heartbeat, daemon=True).start()
+
+    def process_message(self, data):
+        """Process a single Kafka message"""
+        self.message_count += 1
+        
+        try:
+            # Extract features and metadata
+            features = data.get('features', [])
+            metadata = {
+                'source_ip': data.get('source_ip', 'unknown'),
+                'dest_ip': data.get('destination_ip', 'unknown'),
+                'protocol': data.get('protocol', 'unknown'),
+                'timestamp': data.get('timestamp', datetime.now().isoformat())
+            }
+
+            # Make predictions
+            threat_level = predict(self.models['threat'], features)
+            anomaly_score = predict(self.models['anomaly'], features)
+
+            # Process results
+            self.evaluate_threat(threat_level, anomaly_score, metadata)
+
+        except Exception as e:
+            logger.error(f"Error processing message: {str(e)}")
+            print(colored(f"[ERROR] Message processing failed: {str(e)}", 'red'))
+
+    def evaluate_threat(self, threat_level: float, anomaly_score: float, metadata: dict):
+        """Evaluate threat levels and trigger appropriate actions"""
+        timestamp = datetime.now(pytz.utc).isoformat()
+        
+        # Threat evaluation
+        if threat_level > Config.THRESHOLDS['high_threat']:
+            alert = Alert(
+                type='HIGH_THREAT',
+                score=threat_level,
+                timestamp=timestamp,
+                source_ip=metadata.get('source_ip'),
+                destination_ip=metadata.get('dest_ip'),
+                metadata=metadata
+            )
+            self.handle_alert(alert)
+            
+        elif threat_level > Config.THRESHOLDS['medium_threat']:
+            alert = Alert(
+                type='MEDIUM_THREAT',
+                score=threat_level,
+                timestamp=timestamp,
+                source_ip=metadata.get('source_ip'),
+                destination_ip=metadata.get('dest_ip'),
+                metadata=metadata
+            )
+            self.handle_alert(alert)
+            
+        # Anomaly detection
+        if anomaly_score > Config.THRESHOLDS['anomaly']:
+            alert = Alert(
+                type='ANOMALY',
+                score=anomaly_score,
+                timestamp=timestamp,
+                source_ip=metadata.get('source_ip'),
+                destination_ip=metadata.get('dest_ip'),
+                metadata=metadata
+            )
+            self.handle_alert(alert)
