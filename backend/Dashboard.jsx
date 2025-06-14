@@ -74,3 +74,69 @@ function Dashboard() {
             <span>Threat Alerts</span>
             <span className="alert-badge">3</span>
           </button>
+          
+          <button 
+            className={`nav-btn ${activeTab === 'training' ? 'active' : ''}`}
+            onClick={() => setActiveTab('training')}
+          >
+            <FiCpu className="nav-icon" />
+            <span>Model Training</span>
+          </button>
+        </nav>
+        
+        <div className="system-info">
+          <div className="info-item">
+            <FiClock className="info-icon" />
+            <span>Uptime: {systemHealth.uptime ? formatUptime(systemHealth.uptime) : '--'}</span>
+          </div>
+          <div className="info-item">
+            <FiBarChart2 className="info-icon" />
+            <span>Last updated: {lastUpdated.toLocaleTimeString()}</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Main Content Area */}
+      <div className="main-content">
+        {/* Status Header */}
+        <header className="content-header">
+          <h2 className="content-title">
+            {activeTab === 'monitor' && <><FiActivity /> Real-Time Network Monitor</>}
+            {activeTab === 'alerts' && <><FiAlertTriangle /> Security Alerts</>}
+            {activeTab === 'training' && <><FiCpu /> Model Training</>}
+          </h2>
+          
+          <div className="status-indicators">
+            <div className={`status-indicator ${modelStatus.threat_model === 'loaded' ? 'online' : 'offline'}`}>
+              <div className="status-light"></div>
+              Threat Detection
+            </div>
+            <div className={`status-indicator ${modelStatus.anomaly_model === 'loaded' ? 'online' : 'offline'}`}>
+              <div className="status-light"></div>
+              Anomaly Detection
+            </div>
+          </div>
+        </header>
+
+        {/* Loading State */}
+        {isLoading ? (
+          <div className="loading-overlay">
+            <div className="loading-spinner"></div>
+            <p>Loading system status...</p>
+          </div>
+        ) : (
+          <>
+            {/* Content Sections */}
+            <div className="content-section">
+              {activeTab === 'monitor' && <RealTimeMonitor />}
+              {activeTab === 'alerts' && <Alerts />}
+              {activeTab === 'training' && <ModelTraining />}
+            </div>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
+export default Dashboard;
