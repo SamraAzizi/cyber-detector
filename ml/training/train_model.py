@@ -47,3 +47,29 @@ def train_random_forest(X_train, y_train):
         max_depth=config['MAX_DEPTH'],
         random_state=config['RANDOM_STATE']
     )
+
+    model.fit(X_train, y_train)
+    return model
+
+def save_model(model, model_path):
+    """Save trained model to disk."""
+    try:
+        Path(model_path).parent.mkdir(parents=True, exist_ok=True)
+        joblib.dump(model, model_path)
+        logger.info(f"Model saved to {model_path}")
+    except Exception as e:
+        logger.error(f"Error saving model: {e}")
+        raise
+
+def main():
+    try:
+        # Load and preprocess data
+        data = load_data(config['DATASET_PATH'])
+        X, y = preprocess_data(data)
+        
+        # Split data into train and test sets
+        X_train, X_test, y_train, y_test = train_test_split(
+            X, y, 
+            test_size=config['TEST_SIZE'], 
+            random_state=config['RANDOM_STATE']
+        )
