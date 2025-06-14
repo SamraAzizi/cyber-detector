@@ -160,3 +160,110 @@ class ThreatDetector:
                 metadata=metadata
             )
             self.handle_alert(alert)
+
+        # Log all predictions for debugging
+        debug_msg = (
+            f"Threat: {threat_level:.3f} | "
+            f"Anomaly: {anomaly_score:.3f} | "
+            f"From: {metadata.get('source_ip')} | "
+            f"To: {metadata.get('dest_ip')} | "
+            f"Protocol: {metadata.get('protocol')}"
+        )
+        logger.debug(debug_msg)
+
+    def handle_alert(self, alert: Alert):
+        """Process and display alerts with throttling"""
+        # Throttle alerts of the same type
+        last_alert = self.last_alert_time.get(alert.type, 0)
+        current_time = time.time()
+        
+        if current_time - last_alert < Config.ALERT_THROTTLE_SECONDS:
+            return
+            
+        self.last_alert_time[alert.type] = current_time
+        self.alert_history.append(alert)
+        
+        # Format alert message
+        if alert.type == 'HIGH_THREAT':
+            alert_msg = colored(f"🚨 CRITICAL THREAT DETECTED: {alert.score:.3f}", 'red', attrs=['bold'])
+        elif alert.type == 'MEDIUM_THREAT':
+            alert_msg = colored(f"⚠️ POTENTIAL THREAT DETECTED: {alert.score:.3f}", 'yellow')
+        else:
+            alert_msg = colored(f"🔍 NETWORK ANOMALY DETECTED: {alert.score:.3f}", 'magenta')
+        
+        details = (
+            f"\n  Timestamp: {alert.timestamp}"
+            f"\n  Source IP: {alert.source_ip}"
+            f"\n  Dest IP: {alert.destination_ip}"
+        )
+        
+        # Print to console and log
+        print(f"\n{alert_msg}{details}\n")
+        logger.warning(f"{alert.type} - Score: {alert.score:.3f} - {details}")
+        
+        # Additional alert actions could go here (email, SMS, etc.)
+        # self.send_email_alert(alert)
+
+    def send_email_alert(self, alert: Alert):
+        """Example email alerting function"""
+        try:
+            msg = MIMEText(
+                f"Security Alert: {alert.type}\n"
+                f"Score: {alert.score:.3f}\n"
+                f"Timestamp: {alert.timestamp}\n"
+                f"Source IP: {alert.source_ip}\n"
+                f"Destination IP: {alert.destination_ip}"
+            )
+            
+            msg['Subject'] = f"Security Alert: {alert.type}"
+            msg['From'] = "threat-detector@yourdomain.com"
+            msg['To'] = "security-team@yourdomain.com"
+            
+            # This would need proper SMTP configuration
+            # with smtplib.SMTP('smtp.yourdomain.com') as server:
+            #     server.send_message(msg)
+            
+        except Exception as e:
+            logger.error(f"Failed to send email alert: {str(e)}")
+
+    def run(self):
+        """Main consumer loop"""
+        self.start_heartbeat()
+        
+        try:
+            consumer = KafkaConsumer(
+                Config.KAFKA_TOPIC,
+                bootstrap_servers=Config.KAFKA_SERVERS,
+                auto_offset_reset='latest',
+                value_deserializer=lambda x: json.loads(x.decode('utf-8'))
+            )
+            
+            print(colored("\n✔️ Successfully connected to Kafka\n", 'green'))
+            logger.info(f"Started consuming from {Config.KAFKA_TOPIC}")
+            
+            for message in consumer:
+                if not self.running:
+                    break
+                    
+                self.process_message(message.value)
+                
+        except KeyboardInterrupt:
+            print(colored("\n🛑 Gracefully shutting down...", 'yellow'))
+            logger.info("Shutdown initiated by user")
+        except Exception as e:
+            logger.critical(f"Fatal error: {str(e)}")
+            print(colored(f"\n💀 FATAL ERROR: {str(e)}", 'red'))
+        finally:
+            self.running = False
+            summary = (
+                f"\nSession Summary:\n"
+                f"Messages processed: {self.message_count}\n"
+                f"Alerts triggered: {len(self.alert_history)}\n"
+                f"Last alert: {self.alert_history[-1].timestamp if self.alert_history else 'None'}\n"
+            )
+            print(colored(summary, 'cyan'))
+            logger.info(summary)
+
+if __name__ == "__main__":
+    detector = ThreatDetector()
+    detector.run()
