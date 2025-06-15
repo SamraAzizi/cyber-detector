@@ -69,3 +69,77 @@ class ModelLoader:
         try:
             start_time = time.time()
             
+            # Memory-efficient loading for large models
+            with open(model_path, 'rb') as f:
+                model = pickle.load(f)
+                
+            load_time = time.time() - start_time
+            self.loaded_models[model_name] = {
+                'model': model,
+                'load_time': load_time,
+                'path': model_path,
+                'predictions': 0
+            }
+            
+            # Print success message
+            msg = (f"✅ Successfully loaded model '{model_name}' "
+                  f"({load_time:.2f}s) | Features: {self._get_model_features(model)}")
+            print(colored(msg, 'green'))
+            self.logger.info(msg)
+            
+            return model
+            
+        except Exception as e:
+            error_msg = f"❌ Failed to load model '{model_name}': {str(e)}"
+            print(colored(error_msg, 'red'))
+            self.logger.error(error_msg)
+            return None
+    
+    def _get_model_features(self, model) -> str:
+        """Get model features information if available"""
+        try:
+            if hasattr(model, 'n_features_in_'):
+                return f"{model.n_features_in_} features"
+            if hasattr(model, 'coef_'):
+                return f"{len(model.coef_[0])} features"
+            return "unknown features"
+        except:
+            return "unknown features"
+    
+    def predict(self, model: Any, features: list, 
+                feature_names: list = None, 
+                visualize: bool = False) -> Tuple[float, Optional[str]]:
+        """
+        Make prediction using loaded model with advanced features
+        
+        Args:
+            model: Loaded model object
+            features: Input features for prediction
+            feature_names: Names of features for visualization
+            visualize: Whether to generate visualization
+            
+        Returns:
+            Tuple of (prediction, visualization_base64_or_None)
+        """
+        if model is None:
+            error_msg = "Model not loaded - prediction aborted"
+            print(colored(error_msg, 'red'))
+            self.logger.error(error_msg)
+            return -1, None
+            
+        try:
+            start_time = time.time()
+            features_array = np.array(features).reshape(1, -1)
+            
+            # Get prediction and probability if available
+            prediction = model.predict(features_array)[0]
+            proba = None
+            
+            if hasattr(model, 'predict_proba'):
+                proba = model.predict_proba(features_array)[0]
+                confidence = max(proba)
+            else:
+                confidence = 1.0
+                
+            pred_time = time.time() - start_time
+            
