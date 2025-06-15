@@ -64,3 +64,28 @@ class FeatureEngineer:
         
         self.feature_config['network_features'] = ['bytes_ratio', 'packet_rate']
         return df
+
+
+
+    def _add_protocol_features(self, df):
+        """Create protocol-specific features"""
+        if 'protocol' in df.columns:
+            # One-hot encode protocol
+            protocols = pd.get_dummies(df['protocol'], prefix='proto')
+            df = pd.concat([df, protocols], axis=1)
+            self.feature_config['protocols'] = protocols.columns.tolist()
+        return df
+    
+    def _save_feature_config(self):
+        """Save feature engineering configuration"""
+        with open(MODEL_DIR/'feature_config.json', 'w') as f:
+            json.dump(self.feature_config, f, indent=2)
+        
+        # Also save the scaler
+        joblib.dump(self.scaler, MODEL_DIR/'scaler.pkl')
+
+if __name__ == '__main__':
+    fe = FeatureEngineer()
+    df = fe.load_data()
+    df = fe.engineer_features(df)
+    print("Feature engineering completed. Configuration saved.")
