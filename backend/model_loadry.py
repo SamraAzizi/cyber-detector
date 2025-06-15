@@ -267,3 +267,74 @@ class ModelLoader:
                             'f1-score': '{:.2%}', 'accuracy': '{:.2%}'})
                     .set_caption(f"Model Validation Report | Accuracy: {accuracy:.2%}")
                     .render())
+
+            
+        except Exception as e:
+            error_msg = f"Model validation failed: {str(e)}"
+            print(colored(error_msg, 'red'))
+            self.logger.error(error_msg)
+            return None
+    
+    def get_stats(self) -> dict:
+        """Get statistics about loaded models and predictions"""
+        stats = {
+            'total_models': len(self.loaded_models),
+            'total_predictions': sum(
+                m['predictions'] for m in self.loaded_models.values()),
+            'models': {}
+        }
+        
+        for name, data in self.loaded_models.items():
+            avg_time = (data['total_pred_time'] / data['predictions'] 
+                       if data['predictions'] > 0 else 0)
+            stats['models'][name] = {
+                'load_time': data['load_time'],
+                'predictions': data['predictions'],
+                'avg_pred_time': avg_time,
+                'path': data['path']
+            }
+        
+        return stats
+    
+    def print_stats(self):
+        """Display beautiful statistics summary"""
+        stats = self.get_stats()
+        
+        print(colored("\n📈 MODEL LOADER STATISTICS", 'cyan', attrs=['bold']))
+        print(colored("="*40, 'blue'))
+        print(colored(f"Total Models Loaded: {stats['total_models']}", 'yellow'))
+        print(colored(f"Total Predictions Made: {stats['total_predictions']}", 'yellow'))
+        print(colored("-"*40, 'blue'))
+        
+        for name, data in stats['models'].items():
+            print(colored(f"\n🔹 Model: {name}", 'green'))
+            print(f"  Load Time: {data['load_time']:.2f}s")
+            print(f"  Predictions: {data['predictions']}")
+            print(f"  Avg. Prediction Time: {data['avg_pred_time']:.4f}s")
+            print(f"  Path: {data['path']}")
+        
+        print(colored("\n" + "="*40 + "\n", 'blue'))
+
+# Example usage
+if __name__ == "__main__":
+    # Initialize the enhanced model loader
+    loader = ModelLoader()
+    
+    # Load a model with beautiful feedback
+    model = loader.load_model("models/threat_detection_model.pkl", "ThreatDetector")
+    
+    # Make a sample prediction with visualization
+    if model:
+        sample_features = [1.2, 0.5, 3.4, 2.1, 0.9]
+        prediction, visualization = loader.predict(
+            model, sample_features, 
+            feature_names=["Duration", "Protocol", "SrcBytes", "DstBytes", "Count"],
+            visualize=True)
+        
+        # Print stats
+        loader.print_stats()
+        
+        # Example of saving visualization
+        if visualization:
+            with open("prediction_visualization.html", "w") as f:
+                f.write(visualization)
