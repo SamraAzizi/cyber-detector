@@ -143,3 +143,127 @@ class ModelLoader:
                 
             pred_time = time.time() - start_time
             
+            # Update statistics
+            model_name = self._get_model_name(model)
+            if model_name in self.loaded_models:
+                self.loaded_models[model_name]['predictions'] += 1
+                if 'total_pred_time' not in self.loaded_models[model_name]:
+                    self.loaded_models[model_name]['total_pred_time'] = 0
+                self.loaded_models[model_name]['total_pred_time'] += pred_time
+            
+            # Generate visualization if requested
+            vis_html = None
+            if visualize:
+                vis_html = self._generate_visualization(
+                    model, features, prediction, proba, feature_names)
+            
+            # Log prediction
+            pred_msg = (f"📊 Prediction: {prediction:.4f} | "
+                       f"Confidence: {confidence:.2%} | "
+                       f"Time: {pred_time:.4f}s")
+            print(colored(pred_msg, 'blue'))
+            self.logger.info(pred_msg)
+            
+            return prediction, vis_html
+            
+        except Exception as e:
+            error_msg = f"Prediction error: {str(e)}"
+            print(colored(error_msg, 'red'))
+            self.logger.error(error_msg)
+            return -1, None
+    
+    def _get_model_name(self, model) -> str:
+        """Get name of loaded model"""
+        for name, data in self.loaded_models.items():
+            if data['model'] == model:
+                return name
+        return "unknown_model"
+    
+    def _generate_visualization(self, model, features, prediction, 
+                              proba, feature_names) -> str:
+        """
+        Generate beautiful visualization of the prediction
+        
+        Returns:
+            Base64 encoded HTML with visualization
+        """
+        try:
+            plt.style.use('ggplot')
+            fig, ax = plt.subplots(1, 2 if proba is not None else 1, 
+                                 figsize=(12, 5))
+            
+            # Feature importance plot
+            if len(features) < 30:  # Only plot if reasonable number of features
+                if feature_names is None:
+                    feature_names = [f'Feature {i}' for i in range(len(features))]
+                
+                if hasattr(model, 'coef_'):
+                    importances = model.coef_[0]
+                elif hasattr(model, 'feature_importances_'):
+                    importances = model.feature_importances_
+                else:
+                    importances = features  # Fallback to raw features
+                
+                pd.Series(importances, index=feature_names).plot(
+                    kind='barh', ax=ax[0] if proba is not None else ax,
+                    title='Feature Importance')
+            
+            # Probability plot if available
+            if proba is not None:
+                pd.Series(proba).plot(
+                    kind='bar', ax=ax[1],
+                    title=f'Class Probabilities (Predicted: {prediction:.2f})',
+                    color=['skyblue' if i != np.argmax(proba) else 'salmon' 
+                          for i in range(len(proba))])
+            
+            plt.tight_layout()
+            
+            # Save to base64 HTML
+            buf = BytesIO()
+            plt.savefig(buf, format='png', dpi=100)
+            buf.seek(0)
+            img_base64 = base64.b64encode(buf.read()).decode('utf-8')
+            plt.close()
+            
+            return (f'<img src="data:image/png;base64,{img_base64}" '
+                    'style="max-width:100%; height:auto;">')
+            
+        except Exception as e:
+            self.logger.warning(f"Visualization failed: {str(e)}")
+            return None
+    
+    def validate_model(self, model, X_test, y_test) -> Optional[str]:
+        """
+        Validate model performance and generate report
+        
+        Args:
+            model: Loaded model object
+            X_test: Test features
+            y_test: Test labels
+            
+        Returns:
+            Classification report as HTML
+        """
+        try:
+            start_time = time.time()
+            y_pred = model.predict(X_test)
+            val_time = time.time() - start_time
+            
+            report = classification_report(y_test, y_pred, output_dict=True)
+            df = pd.DataFrame(report).transpose()
+            
+            # Print summary
+            accuracy = report['accuracy']
+            msg = (f"🧪 Model validation completed | "
+                  f"Accuracy: {accuracy:.2%} | "
+                  f"Time: {val_time:.2f}s")
+            print(colored(msg, 'magenta'))
+            self.logger.info(msg)
+            
+            # Return styled HTML table
+            return (df.style
+                    .background_gradient(cmap='Blues', subset=['precision', 'recall', 'f1-score'])
+                    .format({'precision': '{:.2%}', 'recall': '{:.2%}', 
+                            'f1-score': '{:.2%}', 'accuracy': '{:.2%}'})
+                    .set_caption(f"Model Validation Report | Accuracy: {accuracy:.2%}")
+                    .render())
