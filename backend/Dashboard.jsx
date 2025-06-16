@@ -210,3 +210,106 @@ function Dashboard() {
             <span>Model Training</span>
           </button>
           
+          <button 
+            className={`nav-btn ${activeTab === 'settings' ? 'active' : ''}`}
+            onClick={() => setActiveTab('settings')}
+            aria-current={activeTab === 'settings'}
+          >
+            <FiSettings className="nav-icon" />
+            <span>System Settings</span>
+          </button>
+        </nav>
+        
+        <div className="system-info">
+          <div className="health-indicator">
+            <div className="health-bar">
+              <div 
+                className="health-progress" 
+                style={{ width: `${calculateHealthPercentage()}%` }}
+                data-health={calculateHealthPercentage()}
+              ></div>
+            </div>
+            <span>System Health: {calculateHealthPercentage()}%</span>
+          </div>
+          
+          <div className="info-item">
+            <FiClock className="info-icon" />
+            <span>Uptime: {systemHealth.uptime ? formatUptime(systemHealth.uptime) : '--'}</span>
+          </div>
+          
+          <div className="info-item">
+            <FiBarChart2 className="info-icon" />
+            <span>Last updated: {lastUpdated.toLocaleTimeString()}</span>
+            <button 
+              className="refresh-btn"
+              onClick={handleRefresh}
+              disabled={isLoading}
+              aria-label="Refresh data"
+            >
+              <FiRefreshCw className={`refresh-icon ${isLoading ? 'spinning' : ''}`} />
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Main Content Area */}
+      <div className="main-content">
+        {/* Top Header Bar */}
+        <header className="top-header">
+          <h2 className="content-title">
+            {activeTab === 'monitor' && <><FiActivity /> Real-Time Network Monitor</>}
+            {activeTab === 'alerts' && <><FiAlertTriangle /> Security Alerts ({unreadAlerts} new)</>}
+            {activeTab === 'network' && <><MdNetworkCheck /> Network Map</>}
+            {activeTab === 'metrics' && <><BsGraphUp /> System Health Metrics</>}
+            {activeTab === 'training' && <><FiCpu /> Model Training</>}
+            {activeTab === 'settings' && <><FiSettings /> System Settings</>}
+          </h2>
+          
+          <div className="header-controls">
+            <div className="status-indicators">
+              <div className={`status-indicator ${modelStatus.threat_model === 'loaded' ? 'online' : 'offline'}`}>
+                <div className="status-light"></div>
+                <BsShieldLock className="status-icon" />
+                <span>Threat Detection</span>
+              </div>
+              <div className={`status-indicator ${modelStatus.anomaly_model === 'loaded' ? 'online' : 'offline'}`}>
+                <div className="status-light"></div>
+                <MdSecurity className="status-icon" />
+                <span>Anomaly Detection</span>
+              </div>
+            </div>
+            
+            <div className="user-menu-container">
+              <button 
+                className="user-btn"
+                onClick={() => setUserMenuOpen(!userMenuOpen)}
+                aria-expanded={userMenuOpen}
+                aria-label="User menu"
+              >
+                <FiUser className="user-icon" />
+              </button>
+              
+              {userMenuOpen && (
+                <div className="user-menu">
+                  <button 
+                    className="user-menu-item"
+                    onClick={() => {
+                      setActiveTab('profile');
+                      setUserMenuOpen(false);
+                    }}
+                  >
+                    <FiUser className="menu-icon" />
+                    <span>Profile</span>
+                  </button>
+                  <button 
+                    className="user-menu-item"
+                    onClick={handleLogout}
+                  >
+                    <FiLogOut className="menu-icon" />
+                    <span>Logout</span>
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        </header>
