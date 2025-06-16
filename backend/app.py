@@ -393,3 +393,86 @@ async def detect_anomaly(data: NetworkData):
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             detail="Invalid input data format"
         )
+
+@app.post("/full-analysis", 
+          response_model=DetectionResult, 
+          tags=["Detection"],
+          dependencies=[Depends(get_api_key)])
+async def full_analysis(data: NetworkData):
+    """Complete threat and anomaly analysis in one call"""
+    cache_key = f"full_{hash(json.dumps(data.dict()))}"
+    if cache_key in response_cache:
+        logger.info("Returning cached full analysis result")
+        return response_cache[cache_key]
+    
+    start_time = time.time()
+    threat_result = await detect_threat(data)
+    anomaly_result = await detect_anomaly(data)
+    
+    result = {
+        "request_id": str(uuid.uuid4()),
+        "timestamp": data.timestamp or datetime.utcnow().isoformat(),
+        "threat_level": threat_result["threat_level"],
+        "anomaly_score": anomaly_result["anomaly_score"],
+        "is_threat": threat_result["is_threat"],
+        "is_anomaly": anomaly_result["is_anomaly"],
+        "confidence": (threat_result["confidence"] + anomaly_result["confidence"]) / 2,
+        "details": {
+            "processing_time": time.time() - start_time,
+            "threat_details": threat_result.get("details", {}),
+            "anomaly_details": anomaly_result.get("details", {})
+        }
+    }
+    
+    response_cache[cache_key] = result
+    return result
+
+# Batch processing endpoint
+@app.post("/batch-analysis",
+          response_model=BatchResult,
+          tags=["Detection"],
+          dependencies=[Depends(get_api_key)])
+async def batch_analysis(batch: BatchRequest):
+    """Process multiple detection requests in one call"""
+    if len(batch.requests) > 100:
+        raise HTTPException(
+            status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+            detail="Maximum batch size is 100 requests"
+        )
+    
+    start_time = time.time()
+    results = []
+    
+    for request in batch.requests:
+        try:
+            result = await full_analysis(request)
+            results.append(result)
+        except Exception as e:
+            logger.error(f"Failed to process batch item: {str(e)}")
+            results.append({
+                "error": str(e),
+                "request_id": str(uuid.uuid4()),
+                "timestamp": datetime.utcnow().isoformat()
+            })
+    
+    return {
+        "results": results,
+        "processing_time": time.time() - start_time,
+        "requests_processed": len(results)
+    }
+
+# Store startup time for uptime calculation
+app.startup_time = time.time()
+
+# Add shutdown event handler
+@app.on_event("shutdown")
+async def shutdown_event():
+    logger.info("Shutting down CyberShield API")
+    # Add any cleanup logic here
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, 
+                host=config.get("host", "0.0.0.0"), 
+                port=config.get("port", 8000),
+                log_level=config.get("log_level", "info"))
