@@ -45,3 +45,21 @@ class DataSplitter:
         X_train.to_csv(DATA_PATH/'X_train.csv', index=False)
         X_val.to_csv(DATA_PATH/'X_val.csv', index=False)
         X_test.to_csv(DATA_PATH/'X_test.csv', index=False)
+
+
+        
+        y_train.to_csv(DATA_PATH/'y_train.csv', index=False)
+        y_val.to_csv(DATA_PATH/'y_val.csv', index=False)
+        y_test.to_csv(DATA_PATH/'y_test.csv', index=False)
+
+if __name__ == '__main__':
+    # Example usage (would normally be called from training pipeline)
+    from feature_engineering import FeatureEngineer
+    
+    fe = FeatureEngineer()
+    df = fe.load_data()
+    df = fe.engineer_features(df)
+    
+    splitter = DataSplitter()
+    splitter.split_data(df)
+    print("Data splitting completed. Files saved to", DATA_PATH)
