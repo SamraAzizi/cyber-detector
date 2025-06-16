@@ -25,3 +25,23 @@ class DataSplitter:
             stratify=y,
             random_state=self.random_state
         )
+
+
+        # Second split (train vs val)
+        X_train, X_val, y_train, y_val = train_test_split(
+            X_train_val, y_train_val,
+            test_size=self.val_size,
+            stratify=y_train_val,
+            random_state=self.random_state
+        )
+        
+        # Save all splits
+        self._save_splits(X_train, X_val, X_test, y_train, y_val, y_test)
+        
+        return X_train, X_val, X_test, y_train, y_val, y_test
+    
+    def _save_splits(self, X_train, X_val, X_test, y_train, y_val, y_test):
+        """Save all data splits to disk"""
+        X_train.to_csv(DATA_PATH/'X_train.csv', index=False)
+        X_val.to_csv(DATA_PATH/'X_val.csv', index=False)
+        X_test.to_csv(DATA_PATH/'X_test.csv', index=False)
