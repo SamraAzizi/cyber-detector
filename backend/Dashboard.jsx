@@ -313,3 +313,60 @@ function Dashboard() {
             </div>
           </div>
         </header>
+
+        {/* Notification Area */}
+        {notifications.length > 0 && (
+          <div className="notification-area">
+            {notifications.map(notification => (
+              <div 
+                key={notification.id} 
+                className={`notification ${notification.type}`}
+                onClick={() => setNotifications(prev => prev.filter(n => n.id !== notification.id))}
+              >
+                <FiAlertCircle className="notification-icon" />
+                <span>{notification.message}</span>
+                <span className="notification-time">
+                  {Math.floor((new Date() - notification.timestamp) / 1000)}s ago
+                </span>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Error State */}
+        {error && (
+          <div className="error-banner">
+            <FiAlertCircle className="error-icon" />
+            <span>{error}</span>
+            <button className="retry-btn" onClick={fetchStatus}>
+              Retry
+            </button>
+          </div>
+        )}
+
+        {/* Loading State */}
+        {isLoading ? (
+          <div className="loading-overlay">
+            <div className="loading-spinner"></div>
+            <p>Loading system data...</p>
+          </div>
+        ) : (
+          <>
+            {/* Content Sections */}
+            <div className="content-section">
+              {activeTab === 'monitor' && <RealTimeMonitor healthData={systemHealth} />}
+              {activeTab === 'alerts' && <Alerts />}
+              {activeTab === 'network' && <NetworkMap />}
+              {activeTab === 'metrics' && <HealthMetrics healthData={systemHealth} />}
+              {activeTab === 'training' && <ModelTraining modelStatus={modelStatus} />}
+              {activeTab === 'settings' && <SystemSettings />}
+              {activeTab === 'profile' && <UserProfile />}
+            </div>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
+export default Dashboard;
