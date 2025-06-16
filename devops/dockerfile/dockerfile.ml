@@ -1,4 +1,4 @@
-# Use official Python image
+# Use official Python image with additional ML dependencies
 FROM python:3.9-slim
 
 # Set environment variables
@@ -12,17 +12,23 @@ WORKDIR $APP_HOME
 # Install system dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
+    libgomp1 \
     && rm -rf /var/lib/apt/lists/*
 
 # Install Python dependencies
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
+# Install additional ML dependencies
+RUN pip install --no-cache-dir \
+    scikit-learn \
+    pandas \
+    numpy \
+    joblib \
+    pyyaml
+
 # Copy project
 COPY . .
 
-# Expose the port the app runs on
-EXPOSE 8501
-
-# Command to run the application
-CMD ["streamlit", "run", "dashboard/app.py", "--server.port=8501", "--server.address=0.0.0.0"]
+# Command to run training (example)
+CMD ["python", "ml/training/train_model.py"]
