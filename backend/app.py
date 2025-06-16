@@ -309,3 +309,87 @@ async def detect_threat(data: NetworkData, request: Request):
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail="Threat detection model not available"
         )
+   
+    try:
+        start_time = time.time()
+        prediction = predict(threat_model, data.features)
+        confidence = abs(prediction - 0.5) * 2  # Convert to 0-1 confidence
+        
+        result = {
+            "request_id": str(uuid.uuid4()),
+            "timestamp": data.timestamp or datetime.utcnow().isoformat(),
+            "threat_level": float(prediction),
+            "anomaly_score": 0.0,
+            "is_threat": prediction > 0.7,
+            "is_anomaly": False,
+            "confidence": float(confidence),
+            "details": {
+                "processing_time": time.time() - start_time,
+                "model_version": "1.0.0",
+                "source_ip": data.source_ip,
+                "destination_ip": data.destination_ip
+            }
+        }
+        
+        # Cache the result
+        response_cache[cache_key] = result
+        return result
+    except Exception as e:
+        logger.error(f"Threat detection failed: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Invalid input data format"
+        )
+
+@app.post("/detect-anomaly", 
+          response_model=DetectionResult, 
+          tags=["Detection"],
+          dependencies=[Depends(get_api_key)])
+async def detect_anomaly(data: NetworkData):
+    """Detect anomalies in network traffic patterns
+    
+    - **features**: Array of network traffic features (10-100 elements)
+    - **timestamp**: Optional timestamp of the event
+    - Returns: Detailed anomaly analysis
+    """
+    # Check cache first
+    cache_key = f"anomaly_{hash(json.dumps(data.dict()))}"
+    if cache_key in response_cache:
+        logger.info("Returning cached anomaly detection result")
+        return response_cache[cache_key]
+    
+    if not anomaly_model:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Anomaly detection model not available"
+        )
+    
+    try:
+        start_time = time.time()
+        prediction = predict(anomaly_model, data.features)
+        confidence = abs(prediction - 0.5) * 2  # Convert to 0-1 confidence
+        
+        result = {
+            "request_id": str(uuid.uuid4()),
+            "timestamp": data.timestamp or datetime.utcnow().isoformat(),
+            "threat_level": 0.0,
+            "anomaly_score": float(prediction),
+            "is_threat": False,
+            "is_anomaly": prediction > 0.8,
+            "confidence": float(confidence),
+            "details": {
+                "processing_time": time.time() - start_time,
+                "model_version": "1.0.0",
+                "protocol": data.protocol
+            }
+        }
+        
+        # Cache the result
+        response_cache[cache_key] = result
+        return result
+    except Exception as e:
+        logger.error(f"Anomaly detection failed: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Invalid input data format"
+        )
