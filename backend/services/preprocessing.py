@@ -48,6 +48,31 @@ class Prepreocessor:
         df = self._ensure_columns(df)
         
         return df
+    
+
+
+    def _apply_time_features(self, df):
+        """Apply time feature engineering"""
+        for feature in self.feature_config.get('time_features', []):
+            if feature == 'hour':
+                df['hour'] = df['timestamp'].dt.hour
+            elif feature == 'day_of_week':
+                df['day_of_week'] = df['timestamp'].dt.dayofweek
+            elif feature == 'is_weekend':
+                df['is_weekend'] = df['day_of_week'].isin([5,6]).astype(int)
+        return df
+    
+
+    
+    
+    def _apply_network_features(self, df):
+        """Apply network feature engineering"""
+        for feature in self.feature_config.get('network_features', []):
+            if feature == 'bytes_ratio':
+                df['bytes_ratio'] = df['src_bytes'] / (df['dst_bytes'] + 1)
+            elif feature == 'packet_rate':
+                df['packet_rate'] = df['src_pkts'] / (df['duration'] + 0.001)
+        return df
 
     
 
