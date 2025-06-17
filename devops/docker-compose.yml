@@ -1,0 +1,20 @@
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: ..
+      dockerfile: devops/Dockerfiles/Dockerfile.backend
+    ports:
+      - "8000:8000"
+    environment:
+      - FLASK_ENV=production
+      - KAFKA_BROKER=kafka:9092
+    depends_on:
+      - kafka
+      - redis
+    volumes:
+      - ../ml/models:/app/ml/models
+      - ../.env:/app/.env
+    networks:
+      - cyber-net
