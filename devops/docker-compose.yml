@@ -50,7 +50,7 @@ services:
     networks:
       - cyber-net
 
-      # Zookeeper for Kafka
+  # Zookeeper for Kafka
   zookeeper:
     image: bitnami/zookeeper:latest
     ports:
@@ -81,3 +81,23 @@ services:
       - ./prometheus.yml:/etc/prometheus/prometheus.yml
     networks:
       - cyber-net
+
+  # Optional Grafana for visualization
+  grafana:
+    image: grafana/grafana:latest
+    ports:
+      - "3000:3000"
+    volumes:
+      - grafana_data:/var/lib/grafana
+    networks:
+      - cyber-net
+
+volumes:
+  kafka_data:
+  zookeeper_data:
+  redis_data:
+  grafana_data:
+
+networks:
+  cyber-net:
+    driver: bridge
