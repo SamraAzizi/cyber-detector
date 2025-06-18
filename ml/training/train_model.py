@@ -28,3 +28,30 @@ logging.basicConfig(
         logging.StreamHandler()
     ]
 )
+logger = logging.getLogger(__name__)
+
+class ModelTrainer:
+    def __init__(self):
+        self.config = load_config()
+        self.model = None
+        self.metrics = {}
+        self.timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        
+    def load_data(self):
+        """Load and validate dataset"""
+        try:
+            logger.info(f"Loading data from {self.config['DATASET_PATH']}")
+            data = pd.read_csv(self.config['DATASET_PATH'])
+            
+            # Validate required columns exist
+            required_cols = self.config.get('REQUIRED_COLUMNS', [])
+            if not set(required_cols).issubset(data.columns):
+                missing = set(required_cols) - set(data.columns)
+                raise ValueError(f"Missing required columns: {missing}")
+                
+            logger.info(f"Data shape: {data.shape}")
+            return data
+            
+        except Exception as e:
+            logger.error(f"Data loading failed: {str(e)}")
+            sys.exit(1)
