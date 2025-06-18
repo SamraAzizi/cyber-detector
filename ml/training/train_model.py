@@ -81,3 +81,33 @@ class ModelTrainer:
         y = data[self.config['TARGET_COLUMN']]
         
         return X, y
+    
+
+
+    def _handle_missing_values(self, data):
+        """Custom missing value handling"""
+        # Example strategy - adjust based on your data
+        missing_cols = data.columns[data.isnull().any()].tolist()
+        
+        if missing_cols:
+            logger.warning(f"Columns with missing values: {missing_cols}")
+            
+            # Numerical columns: median imputation
+            num_cols = data.select_dtypes(include=np.number).columns
+            num_cols_missing = list(set(num_cols) & set(missing_cols))
+            
+            for col in num_cols_missing:
+                median_val = data[col].median()
+                data[col].fillna(median_val, inplace=True)
+                logger.info(f"Filled missing values in {col} with median: {median_val}")
+            
+            # Categorical columns: mode imputation
+            cat_cols = data.select_dtypes(exclude=np.number).columns
+            cat_cols_missing = list(set(cat_cols) & set(missing_cols))
+            
+            for col in cat_cols_missing:
+                mode_val = data[col].mode()[0]
+                data[col].fillna(mode_val, inplace=True)
+                logger.info(f"Filled missing values in {col} with mode: {mode_val}")
+        
+        return data
