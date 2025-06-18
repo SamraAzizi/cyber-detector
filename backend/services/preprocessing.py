@@ -73,6 +73,34 @@ class Prepreocessor:
             elif feature == 'packet_rate':
                 df['packet_rate'] = df['src_pkts'] / (df['duration'] + 0.001)
         return df
+    
+
+
+    def _apply_protocol_features(self, df):
+        """Apply protocol feature engineering"""
+        for proto in self.feature_config.get('protocols', []):
+            proto_name = proto.split('_')[-1]  
+            df[proto] = (df['protocol'] == proto_name).astype(int)
+        return df
+    
+    def _get_numerical_cols(self):
+        """Get list of numerical columns that need scaling"""
+        
+        return ['duration', 'src_bytes', 'dst_bytes']  
+    
+    def _ensure_columns(self, df):
+        """Ensure all expected columns are present"""
+        expected_cols = set()
+        expected_cols.update(self.feature_config.get('time_features', []))
+        expected_cols.update(self.feature_config.get('network_features', []))
+        expected_cols.update(self.feature_config.get('protocols', []))
+        
+        
+        for col in expected_cols:
+            if col not in df.columns:
+                df[col] = 0
+                
+        return df
 
     
 
