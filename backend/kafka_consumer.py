@@ -509,4 +509,105 @@ class ThreatDetector:
                 self.logger.info("Kafka producer closed successfully")
             except Exception as e:
                 self.logger.error(f"Error closing Kafka producer: {str(e)}")
+  
+        # Generate summary report
+        self.generate_summary_report()
         
+        # Exit the application
+        sys.exit(0)
+
+    def generate_summary_report(self):
+        """Create a detailed summary report of the session"""
+        duration = datetime.now(pytz.utc) - self.start_time
+        alert_counts = defaultdict(int)
+        
+        for alert in self.alert_history:
+            alert_counts[alert.type] += 1
+        
+        summary = (
+            f"\n========== Session Summary ==========\n"
+            f"Start Time: {self.start_time.isoformat()}\n"
+            f"Duration: {duration}\n"
+            f"Messages Processed: {self.message_count}\n"
+            f"Alerts Generated: {len(self.alert_history)}\n"
+            f"Average Processing Time: {statistics.mean(self.processing_times) if self.processing_times else 0:.3f}s\n"
+            f"\nAlert Breakdown:\n"
+        )
+        
+        for alert_type, count in alert_counts.items():
+            summary += f"  {alert_type}: {count}\n"
+            
+        summary += (
+            f"\nTop Alert Sources:\n"
+        )
+        
+        # Get top 5 alerting IPs
+        top_ips = sorted(self.ip_alert_counts.items(), key=lambda x: x[1], reverse=True)[:5]
+        for ip, count in top_ips:
+            summary += f"  {ip}: {count} alerts\n"
+            
+        print(colored(summary, 'cyan'))
+        self.logger.info(summary)
+
+    def run(self):
+        """Main consumer loop with enhanced error handling"""
+        self.logger.info("Starting threat detection consumer...")
+        
+        consumer = None
+        try:
+            consumer = KafkaConsumer(
+                Config.KAFKA_TOPIC,
+                bootstrap_servers=Config.KAFKA_SERVERS,
+                group_id=Config.KAFKA_GROUP_ID,
+                auto_offset_reset='latest',
+                enable_auto_commit=True,
+                value_deserializer=lambda x: json.loads(x.decode('utf-8')),
+                max_partition_fetch_bytes=Config.MAX_MESSAGE_SIZE,
+                security_protocol='SSL' if os.getenv('KAFKA_SSL') else 'PLAINTEXT'
+            )
+            
+            self.logger.info(f"Connected to Kafka, consuming from {Config.KAFKA_TOPIC}")
+            print(colored("\n✔️ Successfully connected to Kafka cluster\n", 'green'))
+            
+            for message in consumer:
+                if not self.running:
+                    break
+                
+                try:
+                    self.process_message(message.value)
+                except Exception as e:
+                    self.logger.error(f"Error processing message (will continue): {str(e)}")
+                    
+        except KeyboardInterrupt:
+            self.logger.info("Shutdown initiated by user")
+        except Exception as e:
+            self.logger.critical(f"Fatal Kafka error: {str(e)}")
+            print(colored(f"\n💀 FATAL ERROR: {str(e)}", 'red'))
+        finally:
+            if consumer:
+                consumer.close()
+            self.graceful_shutdown()
+
+# ==================== Supporting Classes ====================
+class ColorFormatter(logging.Formatter):
+    """Custom log formatter with colored output"""
+    COLORS = {
+        'WARNING': 'yellow',
+        'ERROR': 'red',
+        'CRITICAL': 'red',
+        'DEBUG': 'blue',
+        'INFO': 'green'
+    }
+
+    def format(self, record):
+        message = super().format(record)
+        return colored(message, self.COLORS.get(record.levelname, 'white'))
+
+# ==================== Main Execution ====================
+if __name__ == "__main__":
+    try:
+        detector = ThreatDetector()
+        detector.run()
+    except Exception as e:
+        print(colored(f"\n💀 FATAL INITIALIZATION ERROR: {str(e)}", 'red'))
+        sys.exit(1)      
