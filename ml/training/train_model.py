@@ -37,6 +37,9 @@ class ModelTrainer:
         self.metrics = {}
         self.timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         
+
+
+        
     def load_data(self):
         """Load and validate dataset"""
         try:
@@ -55,3 +58,26 @@ class ModelTrainer:
         except Exception as e:
             logger.error(f"Data loading failed: {str(e)}")
             sys.exit(1)
+        
+
+    
+    def preprocess_data(self, data):
+        """Handle data preprocessing"""
+        logger.info("Preprocessing data...")
+        
+        # Drop duplicates
+        initial_size = len(data)
+        data = data.drop_duplicates()
+        logger.info(f"Removed {initial_size - len(data)} duplicates")
+        
+        # Handle missing values
+        data = self._handle_missing_values(data)
+        
+        # Feature engineering could be added here
+        # Or imported from feature_engineering.py
+        
+        # Separate features and target
+        X = data.drop(self.config['TARGET_COLUMN'], axis=1)
+        y = data[self.config['TARGET_COLUMN']]
+        
+        return X, y
