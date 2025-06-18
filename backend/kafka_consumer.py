@@ -410,3 +410,103 @@ class ThreatDetector:
             'MEDIUM_THREAT': ('🔔 MEDIUM THREAT DETECTED', 'blue', False),
             'ANOMALY': ('🔍 NETWORK ANOMALY', 'magenta', False)
         }
+       
+        title, color, urgent = alert_formats.get(alert.type, ('ℹ️ ALERT', 'white', False))
+        alert_msg = colored(f"{title}: {alert.score:.3f}", color, attrs=['bold'] if urgent else [])
+        
+        # Detailed alert information
+        details = (
+            f"\n  ID: {alert.id}"
+            f"\n  Timestamp: {alert.timestamp}"
+            f"\n  Source: {alert.source_ip}"
+            f"\n  Destination: {alert.destination_ip}"
+            f"\n  Protocol: {alert.protocol}"
+        )
+        
+        # Print to console
+        print(f"\n{alert_msg}{details}\n")
+        
+        # Log the alert
+        self.logger.warning(f"{alert.type} - Score: {alert.score:.3f} - {details}")
+        
+        # Send to Kafka alerts topic
+        self.send_kafka_alert(alert)
+        
+        # Send email for urgent alerts
+        if urgent:
+            self.send_email_alert(alert)
+
+    def send_kafka_alert(self, alert: Alert):
+        """Publish alert to Kafka topic"""
+        try:
+            alert_dict = asdict(alert)
+            alert_dict['processed'] = True  # Mark as processed by our system
+            
+            # Encrypt sensitive fields
+            if alert.source_ip != 'unknown':
+                alert_dict['source_ip'] = encrypt_data(alert.source_ip)
+            if alert.destination_ip != 'unknown':
+                alert_dict['destination_ip'] = encrypt_data(alert.destination_ip)
+            
+            self.kafka_producer.send(
+                Config.KAFKA_ALERTS_TOPIC,
+                value=alert_dict
+            )
+            self.logger.debug(f"Published alert to Kafka: {alert.id}")
+            
+        except Exception as e:
+            self.logger.error(f"Failed to publish alert to Kafka: {str(e)}")
+
+    def send_email_alert(self, alert: Alert):
+        """Send formatted email alert with HTML content"""
+        try:
+            msg = MIMEMultipart()
+            msg['Subject'] = f"[CyberShield] {alert.type} Detected"
+            msg['From'] = Config.EMAIL_FROM
+            msg['To'] = ', '.join(Config.EMAIL_TO)
+            
+            # HTML email content
+            html = f"""
+            <html>
+                <body>
+                    <h2 style="color: {'red' if 'CRITICAL' in alert.type else 'orange'}">{alert.type}</h2>
+                    <p><strong>Score:</strong> {alert.score:.3f}</p>
+                    <p><strong>Timestamp:</strong> {alert.timestamp}</p>
+                    <p><strong>Source IP:</strong> {alert.source_ip}</p>
+                    <p><strong>Destination IP:</strong> {alert.destination_ip}</p>
+                    <p><strong>Protocol:</strong> {alert.protocol}</p>
+                    <p><strong>Alert ID:</strong> {alert.id}</p>
+                    <hr>
+                    <p>This alert requires immediate attention.</p>
+                </body>
+            </html>
+            """
+            
+            msg.attach(MIMEText(html, 'html'))
+            
+            with smtplib.SMTP(Config.SMTP_SERVER, Config.SMTP_PORT) as server:
+                server.starttls()
+                # server.login(username, password)  # Add credentials if needed
+                server.send_message(msg)
+                
+            self.logger.info(f"Email alert sent for {alert.id}")
+            
+        except Exception as e:
+            self.logger.error(f"Failed to send email alert: {str(e)}")
+
+    def graceful_shutdown(self, signum=None, frame=None):
+        """Handle graceful shutdown with resource cleanup"""
+        self.logger.info("Initiating graceful shutdown...")
+        print(colored("\n🛑 Gracefully shutting down...", 'yellow'))
+        
+        self.running = False
+        
+        # Close Kafka producer
+        if self.kafka_producer:
+            try:
+                self.kafka_producer.flush(timeout=10)
+                self.kafka_producer.close()
+                self.logger.info("Kafka producer closed successfully")
+            except Exception as e:
+                self.logger.error(f"Error closing Kafka producer: {str(e)}")
+        
