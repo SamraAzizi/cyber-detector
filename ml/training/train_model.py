@@ -199,3 +199,32 @@ class ModelTrainer:
         latest_path.unlink(missing_ok=True)
         latest_path.symlink_to(artifacts_dir.resolve())
         logger.info(f"Updated latest model symlink to {artifacts_dir}")
+
+
+
+
+    def run(self):
+        """Execute full training pipeline"""
+        try:
+            logger.info("Starting training pipeline")
+            
+            # 1. Load data
+            data = self.load_data()
+            
+            # 2. Preprocess
+            X, y = self.preprocess_data(data)
+            
+            # 3. Split data
+            X_train, X_test, y_train, y_test = train_test_split(
+                X, y,
+                test_size=self.config['TEST_SIZE'],
+                random_state=self.config['RANDOM_STATE'],
+                stratify=y if self.config.get('STRATIFY_SPLIT', True) else None
+            )
+            logger.info(f"Train size: {len(X_train)}, Test size: {len(X_test)}")
+            
+            # 4. Train model
+            self.model = self.train_model(X_train, y_train)
+            
+
+            
