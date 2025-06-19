@@ -1,0 +1,9 @@
+DATASET_PATH: "ml/datasets/cyber_threats.csv"
+TARGET_COLUMN: "attack_type"
+REQUIRED_COLUMNS: ["duration", "protocol_type", "src_bytes", "dst_bytes"]
+TEST_SIZE: 0.2
+RANDOM_STATE: 42
+STRATIFY_SPLIT: True
+N_ESTIMATORS: 200
+MAX_DEPTH: None
+CLASS_WEIGHT: "balanced"
