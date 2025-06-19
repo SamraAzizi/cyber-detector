@@ -167,3 +167,35 @@ class ModelTrainer:
         
         return metrics
     
+
+
+
+    def save_artifacts(self, model, metrics):
+        """Save model and metrics"""
+        artifacts_dir = Path('ml/models') / self.timestamp
+        artifacts_dir.mkdir(parents=True, exist_ok=True)
+        
+        # Save model
+        model_path = artifacts_dir / 'model.joblib'
+        joblib.dump(model, model_path)
+        logger.info(f"Model saved to {model_path}")
+        
+        # Save metrics
+        metrics_path = artifacts_dir / 'metrics.json'
+        with open(metrics_path, 'w') as f:
+            json.dump(metrics, f, indent=2)
+        logger.info(f"Metrics saved to {metrics_path}")
+        
+        # Save feature importance
+        if hasattr(model, 'feature_importances_'):
+            importance = dict(zip(model.feature_names_in_, model.feature_importances_))
+            importance_path = artifacts_dir / 'feature_importance.json'
+            with open(importance_path, 'w') as f:
+                json.dump(importance, f, indent=2)
+            logger.info(f"Feature importance saved to {importance_path}")
+        
+        # Update latest model reference
+        latest_path = Path('ml/models/latest')
+        latest_path.unlink(missing_ok=True)
+        latest_path.symlink_to(artifacts_dir.resolve())
+        logger.info(f"Updated latest model symlink to {artifacts_dir}")
