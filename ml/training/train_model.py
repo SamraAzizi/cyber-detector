@@ -111,3 +111,59 @@ class ModelTrainer:
                 logger.info(f"Filled missing values in {col} with mode: {mode_val}")
         
         return data
+    
+
+
+    def train_model(self, X_train, y_train):
+        """Model training with cross-validation"""
+        logger.info("Training Random Forest model...")
+        
+        try:
+            model = RandomForestClassifier(
+                n_estimators=self.config.get('N_ESTIMATORS', 100),
+                max_depth=self.config.get('MAX_DEPTH', None),
+                class_weight=self.config.get('CLASS_WEIGHT', 'balanced'),
+                random_state=self.config['RANDOM_STATE'],
+                n_jobs=-1  # Use all available cores
+            )
+            
+            model.fit(X_train, y_train)
+            logger.info("Model training completed")
+            return model
+            
+        except Exception as e:
+            logger.error(f"Model training failed: {str(e)}")
+            sys.exit(1)
+
+            
+
+    
+
+    def evaluate_model(self, model, X_test, y_test):
+        """Comprehensive model evaluation"""
+        logger.info("Evaluating model...")
+        
+        y_pred = model.predict(X_test)
+        y_proba = model.predict_proba(X_test)[:, 1]  # Probability of positive class
+        
+        # Calculate metrics
+        metrics = {
+            'accuracy': accuracy_score(y_test, y_pred),
+            'precision': precision_score(y_test, y_pred, average='weighted'),
+            'recall': recall_score(y_test, y_pred, average='weighted'),
+            'f1': f1_score(y_test, y_pred, average='weighted'),
+            'roc_auc': roc_auc_score(y_test, y_proba) if len(np.unique(y_test)) == 2 else None,
+            'classification_report': classification_report(y_test, y_pred, output_dict=True),
+            'confusion_matrix': confusion_matrix(y_test, y_pred).tolist()
+        }
+        
+        # Log important metrics
+        logger.info(f"Accuracy: {metrics['accuracy']:.4f}")
+        logger.info(f"Precision: {metrics['precision']:.4f}")
+        logger.info(f"Recall: {metrics['recall']:.4f}")
+        logger.info(f"F1 Score: {metrics['f1']:.4f}")
+        if metrics['roc_auc'] is not None:
+            logger.info(f"ROC AUC: {metrics['roc_auc']:.4f}")
+        
+        return metrics
+    
