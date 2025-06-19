@@ -167,3 +167,86 @@ class ModelTrainer:
         
         return metrics
     
+
+
+
+    def save_artifacts(self, model, metrics):
+        """Save model and metrics"""
+        artifacts_dir = Path('ml/models') / self.timestamp
+        artifacts_dir.mkdir(parents=True, exist_ok=True)
+        
+        # Save model
+        model_path = artifacts_dir / 'model.joblib'
+        joblib.dump(model, model_path)
+        logger.info(f"Model saved to {model_path}")
+        
+        # Save metrics
+        metrics_path = artifacts_dir / 'metrics.json'
+        with open(metrics_path, 'w') as f:
+            json.dump(metrics, f, indent=2)
+        logger.info(f"Metrics saved to {metrics_path}")
+        
+        # Save feature importance
+        if hasattr(model, 'feature_importances_'):
+            importance = dict(zip(model.feature_names_in_, model.feature_importances_))
+            importance_path = artifacts_dir / 'feature_importance.json'
+            with open(importance_path, 'w') as f:
+                json.dump(importance, f, indent=2)
+            logger.info(f"Feature importance saved to {importance_path}")
+        
+        # Update latest model reference
+        latest_path = Path('ml/models/latest')
+        latest_path.unlink(missing_ok=True)
+        latest_path.symlink_to(artifacts_dir.resolve())
+        logger.info(f"Updated latest model symlink to {artifacts_dir}")
+
+
+
+
+    def run(self):
+        """Execute full training pipeline"""
+        try:
+            logger.info("Starting training pipeline")
+            
+            # 1. Load data
+            data = self.load_data()
+            
+            # 2. Preprocess
+            X, y = self.preprocess_data(data)
+            
+            # 3. Split data
+            X_train, X_test, y_train, y_test = train_test_split(
+                X, y,
+                test_size=self.config['TEST_SIZE'],
+                random_state=self.config['RANDOM_STATE'],
+                stratify=y if self.config.get('STRATIFY_SPLIT', True) else None
+            )
+            logger.info(f"Train size: {len(X_train)}, Test size: {len(X_test)}")
+            
+
+            # 4. Train model
+            self.model = self.train_model(X_train, y_train)
+
+            
+            # 5. Evaluate
+            self.metrics = self.evaluate_model(self.model, X_test, y_test)
+            
+
+            # 6. Save artifacts
+            self.save_artifacts(self.model, self.metrics)
+            
+            logger.info("Training pipeline completed successfully")
+            return True
+            
+            
+        except Exception as e:
+            logger.error(f"Training pipeline failed: {str(e)}")
+            return False
+
+if __name__ == "__main__":
+    trainer = ModelTrainer()
+    success = trainer.run()
+    sys.exit(0 if success else 1)
+            
+
+            
