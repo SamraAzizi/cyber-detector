@@ -223,8 +223,30 @@ class ModelTrainer:
             )
             logger.info(f"Train size: {len(X_train)}, Test size: {len(X_test)}")
             
+
             # 4. Train model
             self.model = self.train_model(X_train, y_train)
+
+            
+            # 5. Evaluate
+            self.metrics = self.evaluate_model(self.model, X_test, y_test)
+            
+
+            # 6. Save artifacts
+            self.save_artifacts(self.model, self.metrics)
+            
+            logger.info("Training pipeline completed successfully")
+            return True
+            
+            
+        except Exception as e:
+            logger.error(f"Training pipeline failed: {str(e)}")
+            return False
+
+if __name__ == "__main__":
+    trainer = ModelTrainer()
+    success = trainer.run()
+    sys.exit(0 if success else 1)
             
 
             
