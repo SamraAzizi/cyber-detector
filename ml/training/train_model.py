@@ -111,3 +111,28 @@ class ModelTrainer:
                 logger.info(f"Filled missing values in {col} with mode: {mode_val}")
         
         return data
+    
+
+
+    def train_model(self, X_train, y_train):
+        """Model training with cross-validation"""
+        logger.info("Training Random Forest model...")
+        
+        try:
+            model = RandomForestClassifier(
+                n_estimators=self.config.get('N_ESTIMATORS', 100),
+                max_depth=self.config.get('MAX_DEPTH', None),
+                class_weight=self.config.get('CLASS_WEIGHT', 'balanced'),
+                random_state=self.config['RANDOM_STATE'],
+                n_jobs=-1  # Use all available cores
+            )
+            
+            model.fit(X_train, y_train)
+            logger.info("Model training completed")
+            return model
+            
+        except Exception as e:
+            logger.error(f"Model training failed: {str(e)}")
+            sys.exit(1)
+
+            
