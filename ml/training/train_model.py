@@ -94,6 +94,32 @@ class ModelTrainer:
             self._save_model(model, f"best_{name}", metrics, best=True)
             
         return self.best_model
+    
+
+
+
+    def _get_model_instance(self, model_name):
+        """Get configured model instance"""
+        params = self.config.get('MODEL_PARAMS', {}).get(model_name, {})
+        
+        if model_name == 'random_forest':
+            return RandomForestClassifier(
+                n_estimators=params.get('n_estimators', 100),
+                class_weight='balanced',
+                random_state=self.config['RANDOM_STATE'],
+                n_jobs=-1,
+                **params
+            )
+        elif model_name == 'xgboost':
+            return XGBClassifier(
+                n_estimators=params.get('n_estimators', 100),
+                scale_pos_weight=self._calculate_scale_pos_weight(),
+                random_state=self.config['RANDOM_STATE'],
+                n_jobs=-1,
+                **params
+            )
+        else:
+            return self.models[model_name](**params)
 
 
 
