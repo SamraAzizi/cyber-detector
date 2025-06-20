@@ -40,6 +40,43 @@ class ModelTrainer:
         self.model_dir.mkdir(parents=True, exist_ok=True)
 
 
+
+
+    def load_data(self):
+        """Load processed training data"""
+        try:
+            X_train = pd.read_csv('ml/datasets/processed/X_train.csv')
+            y_train = pd.read_csv('ml/datasets/processed/y_train.csv').squeeze()
+            X_val = pd.read_csv('ml/datasets/processed/X_val.csv')
+            y_val = pd.read_csv('ml/datasets/processed/y_val.csv').squeeze()
+            
+            logger.info(f"Training data loaded: {X_train.shape}, {y_train.shape}")
+            logger.info(f"Validation data loaded: {X_val.shape}, {y_val.shape}")
+            
+            return X_train, y_train, X_val, y_val
+            
+        except Exception as e:
+            logger.error(f"Data loading failed: {str(e)}")
+            sys.exit(1)
+
+
+            
+
+    def train_models(self):
+        """Train multiple models and select the best one"""
+        X_train, y_train, X_val, y_val = self.load_data()
+        evaluator = ModelEvaluator()
+        best_score = -1
+        
+        results = {}
+        
+        for model_name, model_class in self.models.items():
+            logger.info(f"Training {model_name}...")
+            
+
+
+
+
     def _calculate_scale_pos_weight(self):
         """Calculate class weight for XGBoost"""
         y_train = pd.read_csv('ml/datasets/processed/y_train.csv').squeeze()
