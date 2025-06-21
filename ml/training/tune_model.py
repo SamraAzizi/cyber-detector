@@ -52,3 +52,26 @@ class ModelTuner:
                 'eval_metric': 'logloss'
             }
             model = XGBClassifier(**params)
+
+
+        score = cross_val_score(
+            model, X_train, y_train, 
+            cv=3, scoring='f1_weighted', n_jobs=-1
+        ).mean()
+        
+        return score
+        
+    def tune(self, n_trials=50):
+        """Run hyperparameter optimization"""
+        study = optuna.create_study(direction='maximize')
+        study.optimize(self.objective, n_trials=n_trials)
+        self.study = study
+        
+        # Save best params
+        best_params = study.best_params
+        self._save_best_params(best_params)
+        
+        # Train and save best model
+        best_model = self._train_best_model(best_params)
+        return best_model, best_params
+    
