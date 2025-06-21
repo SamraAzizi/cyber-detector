@@ -51,7 +51,7 @@ class ModelEvaluator:
             self._plot_confusion_matrix(y_true, y_pred)
             
         return metrics
-    
+        
 
 
     def _get_precision_recall_curve(self, y_true, y_proba):
@@ -60,9 +60,9 @@ class ModelEvaluator:
             'precision': precision.tolist(),
             'recall': recall.tolist()
         }
-    
 
-        
+
+    
     def _plot_roc_curve(self, y_true, y_proba):
         from sklearn.metrics import roc_curve
         fpr, tpr, _ = roc_curve(y_true, y_proba)
@@ -104,3 +104,13 @@ class ModelEvaluator:
         plt.xlabel('Predicted Label')
         plt.savefig('ml/training/plots/confusion_matrix.png')
         plt.close()
+        
+
+
+
+    def save_metrics(self, metrics, model_name, model_dir):
+        """Save metrics to JSON file"""
+        metrics_path = model_dir / f'{model_name}_metrics.json'
+        with open(metrics_path, 'w') as f:
+            json.dump(metrics, f, indent=2)
+        logger.info(f"Metrics saved to {metrics_path}")
