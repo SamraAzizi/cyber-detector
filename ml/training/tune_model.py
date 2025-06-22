@@ -101,4 +101,28 @@ class ModelTuner:
         model_path = model_dir / f'{self.model_type}_tuned.joblib'
         joblib.dump(model, model_path)
 
+        metrics_path = model_dir / f'{self.model_type}_tuned_metrics.json'
+        with open(metrics_path, 'w') as f:
+            json.dump(metrics, f, indent=2)
+            
+        logger.info(f"Best {self.model_type} model saved to {model_path}")
+        logger.info(f"Validation F1: {metrics['f1']:.4f}")
+        
+        return model
+        
+
+
+
+    def _save_best_params(self, params):
+        """Save best parameters to JSON"""
+        params_dir = Path('ml/models/tuned_params')
+        params_dir.mkdir(exist_ok=True)
+        
+        params_path = params_dir / f'{self.model_type}_best_params.json'
+        with open(params_path, 'w') as f:
+            json.dump(params, f, indent=2)
+            
+        logger.info(f"Best parameters saved to {params_path}")
+
+
         
