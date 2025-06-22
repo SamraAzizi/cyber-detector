@@ -75,3 +75,79 @@ class ModelTuner:
         best_model = self._train_best_model(best_params)
         return best_model, best_params
     
+
+
+
+    def _train_best_model(self, params):
+        """Train model with best parameters"""
+        X_train, y_train = self.load_data()
+        X_val = pd.read_csv('ml/datasets/processed/X_val.csv')
+        y_val = pd.read_csv('ml/datasets/processed/y_val.csv').squeeze()
+        
+        if self.model_type == 'random_forest':
+            model = RandomForestClassifier(**params, class_weight='balanced', n_jobs=-1)
+        elif self.model_type == 'xgboost':
+            model = XGBClassifier(**params, scale_pos_weight=self._calculate_scale_pos_weight())
+            
+        model.fit(X_train, y_train)
+        
+        # Evaluate
+        metrics = self.evaluator.evaluate(model, X_val, y_val)
+        
+        # Save
+        model_dir = Path(self.config['MODEL_SAVE_DIR']) / 'tuned_models'
+        model_dir.mkdir(exist_ok=True)
+        
+        model_path = model_dir / f'{self.model_type}_tuned.joblib'
+        joblib.dump(model, model_path)
+
+        metrics_path = model_dir / f'{self.model_type}_tuned_metrics.json'
+        with open(metrics_path, 'w') as f:
+            json.dump(metrics, f, indent=2)
+            
+        logger.info(f"Best {self.model_type} model saved to {model_path}")
+        logger.info(f"Validation F1: {metrics['f1']:.4f}")
+        
+        return model
+        
+
+
+
+    def _save_best_params(self, params):
+        """Save best parameters to JSON"""
+        params_dir = Path('ml/models/tuned_params')
+        params_dir.mkdir(exist_ok=True)
+        
+        params_path = params_dir / f'{self.model_type}_best_params.json'
+        with open(params_path, 'w') as f:
+            json.dump(params, f, indent=2)
+            
+        logger.info(f"Best parameters saved to {params_path}")
+
+
+
+    
+    def _calculate_scale_pos_weight(self):
+        """Calculate class weight for XGBoost"""
+        y_train = pd.read_csv('ml/datasets/processed/y_train.csv').squeeze()
+        class_counts = y_train.value_counts()
+        return class_counts[0] / class_counts[1]
+
+
+
+if __name__ == "__main__":
+    import argparse
+    
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--model-type', type=str, default='random_forest',
+                      choices=['random_forest', 'xgboost'],
+                      help='Model type to tune')
+    parser.add_argument('--trials', type=int, default=50,
+                      help='Number of optimization trials')
+    args = parser.parse_args()
+    
+    tuner = ModelTuner(model_type=args.model_type)
+    tuner.tune(n_trials=args.trials)
+
+
+        
