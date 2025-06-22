@@ -75,3 +75,30 @@ class ModelTuner:
         best_model = self._train_best_model(best_params)
         return best_model, best_params
     
+
+
+
+    def _train_best_model(self, params):
+        """Train model with best parameters"""
+        X_train, y_train = self.load_data()
+        X_val = pd.read_csv('ml/datasets/processed/X_val.csv')
+        y_val = pd.read_csv('ml/datasets/processed/y_val.csv').squeeze()
+        
+        if self.model_type == 'random_forest':
+            model = RandomForestClassifier(**params, class_weight='balanced', n_jobs=-1)
+        elif self.model_type == 'xgboost':
+            model = XGBClassifier(**params, scale_pos_weight=self._calculate_scale_pos_weight())
+            
+        model.fit(X_train, y_train)
+        
+        # Evaluate
+        metrics = self.evaluator.evaluate(model, X_val, y_val)
+        
+        # Save
+        model_dir = Path(self.config['MODEL_SAVE_DIR']) / 'tuned_models'
+        model_dir.mkdir(exist_ok=True)
+        
+        model_path = model_dir / f'{self.model_type}_tuned.joblib'
+        joblib.dump(model, model_path)
+
+        
