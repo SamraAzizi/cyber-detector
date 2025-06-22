@@ -125,4 +125,29 @@ class ModelTuner:
         logger.info(f"Best parameters saved to {params_path}")
 
 
+
+    
+    def _calculate_scale_pos_weight(self):
+        """Calculate class weight for XGBoost"""
+        y_train = pd.read_csv('ml/datasets/processed/y_train.csv').squeeze()
+        class_counts = y_train.value_counts()
+        return class_counts[0] / class_counts[1]
+
+
+
+if __name__ == "__main__":
+    import argparse
+    
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--model-type', type=str, default='random_forest',
+                      choices=['random_forest', 'xgboost'],
+                      help='Model type to tune')
+    parser.add_argument('--trials', type=int, default=50,
+                      help='Number of optimization trials')
+    args = parser.parse_args()
+    
+    tuner = ModelTuner(model_type=args.model_type)
+    tuner.tune(n_trials=args.trials)
+
+
         
