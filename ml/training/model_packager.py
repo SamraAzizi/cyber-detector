@@ -109,5 +109,23 @@ class ModelPackager:
     def create_deployment_package(self):
         """Create deployment package from latest model"""
         latest_model = self.model_dir / 'latest' / 'model.joblib'
+
+        if not latest_model.exists():
+            raise FileNotFoundError("No trained model found in latest directory")
+            
+        # Load metrics
+        metrics_path = latest_model.parent / 'metrics.json'
+        metrics = json.loads(metrics_path.read_text()) if metrics_path.exists() else {}
         
+        return self.package_model(latest_model, metadata={
+            'performance_metrics': metrics,
+            'deployment_version': self.timestamp
+        })
+
+
+
+
+if __name__ == "__main__":
+    packager = ModelPackager()
+    packager.create_deployment_package()
         
