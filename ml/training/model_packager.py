@@ -89,4 +89,25 @@ class ModelPackager:
         except Exception as e:
             logger.warning(f"ONNX conversion failed: {str(e)}")
             raise
+
+
+
+
+    def _copy_feature_config(self):
+        """Copy feature engineering configuration"""
+        try:
+            feature_config = self.model_dir / 'feature_config.json'
+            if feature_config.exists():
+                destination = self.package_dir / 'feature_config.json'
+                destination.write_text(feature_config.read_text())
+        except Exception as e:
+            logger.warning(f"Could not copy feature config: {str(e)}")
+
+
+
+
+    def create_deployment_package(self):
+        """Create deployment package from latest model"""
+        latest_model = self.model_dir / 'latest' / 'model.joblib'
+        
         
