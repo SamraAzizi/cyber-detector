@@ -61,3 +61,32 @@ class ModelPackager:
         except Exception as e:
             logger.error(f"Model packaging failed: {str(e)}")
             raise
+
+
+
+
+    def _convert_to_onnx(self, model, metadata):
+        """Convert sklearn model to ONNX format"""
+        try:
+            # Prepare initial type (adjust based on your feature count)
+            n_features = len(metadata['input_features']) if metadata['input_features'] else 1
+            initial_type = [('float_input', FloatTensorType([None, n_features]))]
+            
+            # Convert
+            onnx_model = convert_sklearn(
+                model,
+                initial_types=initial_type,
+                target_opset=12
+            )
+            
+            # Save
+            onnx_path = self.package_dir / 'model.onnx'
+            with open(onnx_path, "wb") as f:
+                f.write(onnx_model.SerializeToString())
+                
+            logger.info(f"ONNX model saved to {onnx_path}")
+            
+        except Exception as e:
+            logger.warning(f"ONNX conversion failed: {str(e)}")
+            raise
+        
