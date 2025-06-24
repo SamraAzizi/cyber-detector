@@ -207,3 +207,32 @@ class ModelAdapter:
             }
         })
         return stats
+    
+
+
+
+# Example usage
+if __name__ == "__main__":
+    adapter = ModelAdapter()
+    
+    if adapter.load_deployment("ml/models/deployment_packages/latest"):
+        # Sample prediction
+        sample_input = {
+            "Duration": 0.5,
+            "Protocol": 1.2,
+            "SrcBytes": 1500,
+            "DstBytes": 800,
+            "Count": 3
+        }
+        
+        try:
+            result = adapter.predict(sample_input)
+            print("\nPrediction Result:")
+            print(json.dumps(result, indent=2))
+            
+            # Print stats
+            print("\nSystem Stats:")
+            print(json.dumps(adapter.get_stats(), indent=2))
+            
+        except Exception as e:
+            print(colored(f"Prediction error: {str(e)}", 'red'))
