@@ -119,3 +119,52 @@ class ModelAdapter:
         return True
     
     
+
+
+
+    def predict(self, input_data: Dict) -> Dict:
+        """
+        Make prediction with schema validation and enhanced output
+        
+        Args:
+            input_data: Dictionary of feature values
+            
+        Returns:
+            Dictionary containing:
+            - prediction: The model prediction
+            - confidence: Prediction confidence
+            - metadata: Model metadata
+            - timestamp: Prediction timestamp
+        """
+        if not self.current_model:
+            raise ValueError("No model loaded for prediction")
+            
+        try:
+            # Prepare features in correct order
+            features = self._prepare_features(input_data)
+            
+            # Make prediction using the backend loader
+            prediction, visualization = self.loader.predict(
+                self.current_model,
+                features,
+                feature_names=self.metadata['input_schema'].keys(),
+                visualize=True
+            )
+            
+            # Prepare comprehensive output
+            return {
+                'prediction': float(prediction),
+                'confidence': self._get_confidence(prediction),
+                'model_version': self.metadata['deployment_timestamp'],
+                'timestamp': datetime.now().isoformat(),
+                'visualization': visualization,
+                'metadata': {
+                    'model_type': self.metadata['model_type'],
+                    'performance': self.metadata.get('performance_metrics', {})
+                }
+            }
+            
+        except Exception as e:
+            logger.error(f"Prediction failed: {str(e)}")
+            raise ValueError(f"Prediction error: {str(e)}")
+
