@@ -94,3 +94,28 @@ class ModelAdapter:
         return True
     
     
+
+
+    def _validate_feature_schema(self) -> bool:
+        """Validate model feature schema"""
+        if 'input_schema' not in self.metadata:
+            print(colored("⚠️  No input schema in metadata", 'yellow'))
+            return True
+            
+        if not hasattr(self.current_model, 'feature_names_in_'):
+            print(colored("⚠️  Model doesn't expose feature names", 'yellow'))
+            return True
+            
+        # Compare metadata schema with actual model features
+        metadata_features = set(self.metadata['input_schema'].keys())
+        model_features = set(self.current_model.feature_names_in_)
+        
+        if metadata_features != model_features:
+            print(colored("❌ Feature mismatch between metadata and model!", 'red'))
+            print(colored(f"Metadata features: {metadata_features}", 'yellow'))
+            print(colored(f"Model features: {model_features}", 'yellow'))
+            return False
+            
+        return True
+    
+    
