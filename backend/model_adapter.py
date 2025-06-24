@@ -72,3 +72,25 @@ class ModelAdapter:
             print(colored(f"❌ Deployment loading failed: {str(e)}", 'red'))
             logger.error(f"Deployment loading failed: {str(e)}")
             return False
+        
+
+
+
+    
+    def _validate_compatibility(self) -> bool:
+        """Validate model compatibility with the current backend"""
+        if not self.metadata or not self.current_model:
+            return False
+            
+        # Check backend version compatibility
+        required_version = self.metadata.get('compatibility', {}).get('backend_version')
+        if required_version != '2.0':
+            print(colored(f"⚠️  Model requires backend version {required_version}", 'yellow'))
+            
+        # Check feature schema
+        if not self._validate_feature_schema():
+            return False
+            
+        return True
+    
+    
