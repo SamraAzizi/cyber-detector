@@ -23,6 +23,9 @@ class ModelAdapter:
         self.current_model = None
         self.metadata = None
         self._print_welcome()
+
+
+        
         
     def _print_welcome(self):
         """Display deployment-specific welcome message"""
@@ -30,3 +33,42 @@ class ModelAdapter:
         print(colored("🚀 MODEL DEPLOYMENT ADAPTER v1.0", 'cyan', attrs=['bold']))
         print(colored("Advanced Deployment Integration Layer", 'yellow'))
         print(colored("="*60 + "\n", 'magenta'))
+
+
+
+
+    def load_deployment(self, package_dir: str) -> bool:
+        """
+        Load a versioned model deployment package
+        
+        Args:
+            package_dir: Path to the deployment package directory
+            
+        Returns:
+            bool: True if loaded successfully
+        """
+        package_path = Path(package_dir)
+        
+        try:
+            # Load metadata first
+            with open(package_path / 'model_metadata.json') as f:
+                self.metadata = json.load(f)
+            
+            # Load model using the backend's ModelLoader
+            model_name = f"ThreatModel_{self.metadata['deployment_timestamp']}"
+            self.current_model = self.loader.load_model(
+                str(package_path / 'threat_model.pkl'),
+                model_name
+            )
+            
+            # Validate compatibility
+            if not self._validate_compatibility():
+                raise ValueError("Model compatibility check failed")
+                
+            print(colored("✅ Deployment package loaded successfully!", 'green'))
+            return True
+            
+        except Exception as e:
+            print(colored(f"❌ Deployment loading failed: {str(e)}", 'red'))
+            logger.error(f"Deployment loading failed: {str(e)}")
+            return False
