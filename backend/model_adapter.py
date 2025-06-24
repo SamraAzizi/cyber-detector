@@ -168,3 +168,42 @@ class ModelAdapter:
             logger.error(f"Prediction failed: {str(e)}")
             raise ValueError(f"Prediction error: {str(e)}")
 
+
+
+
+    def _prepare_features(self, input_data: Dict) -> list:
+        """Prepare features in correct order with validation"""
+        if not self.metadata.get('input_schema'):
+            return list(input_data.values())
+            
+        features = []
+        for feat_name, feat_meta in self.metadata['input_schema'].items():
+            if feat_name not in input_data:
+                raise ValueError(f"Missing required feature: {feat_name}")
+            features.append(float(input_data[feat_name]))
+            
+        return features
+    
+
+
+    
+    def _get_confidence(self, prediction) -> float:
+        """Calculate prediction confidence score"""
+        # This can be enhanced based on model type
+        return 1.0 if prediction in [0, 1] else 0.5
+    
+
+
+    
+    
+    def get_stats(self) -> Dict:
+        """Get combined stats from loader and deployment info"""
+        stats = self.loader.get_stats()
+        stats.update({
+            'deployment': {
+                'version': self.metadata.get('deployment_timestamp'),
+                'model_type': self.metadata.get('model_type'),
+                'performance': self.metadata.get('performance_metrics', {})
+            }
+        })
+        return stats
