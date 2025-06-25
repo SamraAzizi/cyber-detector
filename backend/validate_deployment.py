@@ -171,3 +171,27 @@ class DeploymentValidator:
 
 
 
+
+
+
+    def _test_performance(self):
+        """Run basic performance benchmarks"""
+        if not self.adapter.metadata.get('input_schema'):
+            self._log_test("Performance Benchmark", 'warning', "No schema for performance test")
+            return
+            
+        try:
+            import time
+            test_input = {k: 0.0 for k in self.adapter.metadata['input_schema'].keys()}
+            
+            # Warmup
+            self.adapter.predict(test_input)
+            
+            # Benchmark
+            start = time.time()
+            for _ in range(100):
+                self.adapter.predict(test_input)
+            elapsed = time.time() - start
+            
+        
+        
