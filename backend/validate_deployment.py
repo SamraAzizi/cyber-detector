@@ -195,3 +195,26 @@ class DeploymentValidator:
             
         
         
+            avg_latency = elapsed / 100
+            self._log_test("Performance Benchmark", 'passed', 
+                          f"Average latency: {avg_latency:.4f}s")
+            
+            if avg_latency > 0.1:
+                self._log_test("Latency Warning", 'warning', 
+                              "Latency >100ms may impact real-time performance")
+                
+        except Exception as e:
+            self._log_test("Performance Benchmark", 'failed', str(e))
+
+
+
+
+if __name__ == "__main__":
+    validator = DeploymentValidator()
+    success = validator.validate("ml/models/deployment_packages/latest")
+    
+    if not success:
+        print(colored("\nDEPLOYMENT VALIDATION FAILED", 'red', attrs=['bold']))
+        exit(1)
+    else:
+        print(colored("\nDEPLOYMENT VALIDATION PASSED", 'green', attrs=['bold']))
