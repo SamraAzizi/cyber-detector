@@ -114,4 +114,35 @@ class DeploymentValidator:
             self._log_test("Schema Validation", 'warning', "No input schema in metadata")
             return
             
+        try:
+            # Test with incomplete input
+            test_input = {k: 0.0 for k in list(self.adapter.metadata['input_schema'].keys())[:3]}
+            try:
+                self.adapter.predict(test_input)
+                self._log_test("Schema Validation", 'failed', "Accepted incomplete input")
+            except ValueError as e:
+                self._log_test("Schema Validation", 'passed', "Properly rejected incomplete input")
+                
+            # Test with full input
+            test_input = {k: 0.0 for k in self.adapter.metadata['input_schema'].keys()}
+            self.adapter.predict(test_input)
+            self._log_test("Full Input Validation", 'passed')
+            
+        except Exception as e:
+            self._log_test("Schema Validation", 'failed', str(e))
+    
+
+
+
+    def _test_example_predictions(self, package_dir: str):
+        """Validate against example predictions from training"""
+        examples_path = Path(package_dir) / 'example_predictions.json'
+        if not examples_path.exists():
+            self._log_test("Example Predictions", 'warning', "No example predictions found")
+            return
+            
+        with open(examples_path) as f:
+            examples = json.load(f)
+            
+        passed = 0
 
