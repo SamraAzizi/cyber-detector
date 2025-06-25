@@ -88,3 +88,30 @@ class DeploymentValidator:
         return self.results['failed'] == 0
 
 
+
+
+
+    def _test_model_loading(self, package_dir: str) -> bool:
+        """Test that the model loads successfully"""
+        try:
+            success = self.adapter.load_deployment(package_dir)
+            if success:
+                self._log_test("Model Loading", 'passed')
+                return True
+            else:
+                self._log_test("Model Loading", 'failed')
+                return False
+        except Exception as e:
+            self._log_test("Model Loading", 'failed', str(e))
+            return False
+    
+
+
+
+    def _test_schema_validation(self):
+        """Validate the model's input schema"""
+        if not self.adapter.metadata.get('input_schema'):
+            self._log_test("Schema Validation", 'warning', "No input schema in metadata")
+            return
+            
+
