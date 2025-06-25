@@ -145,4 +145,29 @@ class DeploymentValidator:
             examples = json.load(f)
             
         passed = 0
+        for i, example in enumerate(examples[:3]):  # Test first 3 examples
+            try:
+                # Prepare input
+                input_data = dict(zip(example['feature_names'], example['features']))
+                
+                # Make prediction
+                result = self.adapter.predict(input_data)
+                
+                # Compare with expected
+                predicted_class = result['prediction']
+                expected_class = example.get('predicted_class')
+                
+                if expected_class is not None and predicted_class != expected_class:
+                    self._log_test(f"Example {i+1}", 'failed', 
+                                  f"Predicted {predicted_class}, expected {expected_class}")
+                else:
+                    passed += 1
+                    
+            except Exception as e:
+                self._log_test(f"Example {i+1}", 'failed', str(e))
+                
+        if passed == len(examples[:3]):
+            self._log_test("Example Predictions", 'passed', f"{passed}/{len(examples[:3])} passed")
+
+
 
