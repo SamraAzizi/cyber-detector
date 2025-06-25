@@ -171,3 +171,50 @@ class DeploymentValidator:
 
 
 
+
+
+
+    def _test_performance(self):
+        """Run basic performance benchmarks"""
+        if not self.adapter.metadata.get('input_schema'):
+            self._log_test("Performance Benchmark", 'warning', "No schema for performance test")
+            return
+            
+        try:
+            import time
+            test_input = {k: 0.0 for k in self.adapter.metadata['input_schema'].keys()}
+            
+            # Warmup
+            self.adapter.predict(test_input)
+            
+            # Benchmark
+            start = time.time()
+            for _ in range(100):
+                self.adapter.predict(test_input)
+            elapsed = time.time() - start
+            
+        
+        
+            avg_latency = elapsed / 100
+            self._log_test("Performance Benchmark", 'passed', 
+                          f"Average latency: {avg_latency:.4f}s")
+            
+            if avg_latency > 0.1:
+                self._log_test("Latency Warning", 'warning', 
+                              "Latency >100ms may impact real-time performance")
+                
+        except Exception as e:
+            self._log_test("Performance Benchmark", 'failed', str(e))
+
+
+
+
+if __name__ == "__main__":
+    validator = DeploymentValidator()
+    success = validator.validate("ml/models/deployment_packages/latest")
+    
+    if not success:
+        print(colored("\nDEPLOYMENT VALIDATION FAILED", 'red', attrs=['bold']))
+        exit(1)
+    else:
+        print(colored("\nDEPLOYMENT VALIDATION PASSED", 'green', attrs=['bold']))
