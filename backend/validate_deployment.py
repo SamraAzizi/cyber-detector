@@ -55,3 +55,36 @@ class DeploymentValidator:
         print(colored(f"{symbol} {name}: {status.upper()}", color))
         if message:
             print(colored(f"   → {message}", color))
+
+
+    
+
+
+    def validate(self, package_dir: str) -> bool:
+        """Run full validation suite"""
+        print(colored("\nStarting Deployment Validation", 'cyan', attrs=['bold']))
+        print(colored("=" * 50, 'cyan'))
+        
+        # 1. Test model loading
+        if not self._test_model_loading(package_dir):
+            self._log_test("Model Loading", 'failed', "Cannot continue validation")
+            return False
+            
+        # 2. Validate schema
+        self._test_schema_validation()
+        
+        # 3. Test example predictions
+        self._test_example_predictions(package_dir)
+        
+        # 4. Performance benchmarks
+        self._test_performance()
+        
+        # Summary
+        print(colored("\nValidation Summary:", 'cyan', attrs=['bold']))
+        print(colored(f"Passed: {self.results['passed']}", 'green'))
+        print(colored(f"Warnings: {self.results['warnings']}", 'yellow'))
+        print(colored(f"Failed: {self.results['failed']}", 'red'))
+        
+        return self.results['failed'] == 0
+
+
