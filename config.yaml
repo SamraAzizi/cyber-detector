@@ -7,3 +7,16 @@ STRATIFY_SPLIT: True
 N_ESTIMATORS: 200
 MAX_DEPTH: None
 CLASS_WEIGHT: "balanced"
+
+
+monitoring:
+  reference_stats_path: "ml/models/deployment_packages/latest/reference_stats.json"
+  drift_threshold: 0.05
+  performance_window: 1000
+  performance_decay_threshold: 0.05
+  enable_scheduled_checks: true
+  check_interval_hours: 24
+
+mlflow:
+  tracking_uri: "file:./mlruns"
+  experiment_name: "cybershield_production"
