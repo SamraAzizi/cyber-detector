@@ -25,9 +25,7 @@ from typing import Literal
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# =========================================================================
-# Enhanced Configuration Management
-# =========================================================================
+
 class AppConfig:
     """Centralized configuration management with validation"""
     _instance = None
@@ -77,15 +75,11 @@ except Exception as e:
     logger.critical(f"Failed to initialize configuration: {str(e)}")
     raise
 
-# =========================================================================
-# Model Management Setup
-# =========================================================================
+
 DEPLOYMENT_PACKAGE = "ml/models/deployment_packages/latest"
 model_adapter = ModelLoader()
 
-# =========================================================================
-# FastAPI Application Setup
-# =========================================================================
+
 app = FastAPI(
     title="CyberShield API",
     description="""**Advanced Threat Detection & Anomaly Modeling System** 🔍🛡️
@@ -112,9 +106,7 @@ if static_dir.exists():
 # Response caching
 response_cache = TTLCache(maxsize=1000, ttl=config['cache_ttl'])
 
-# =========================================================================
-# Model Lifecycle Management
-# =========================================================================
+
 @app.on_event("startup")
 async def startup_event():
     """Initialize application state and load models"""
@@ -139,9 +131,7 @@ async def startup_event():
         if config.get("strict_mode", False):
             raise
 
-# =========================================================================
-# Enhanced Data Models
-# =========================================================================
+
 class ModelHealth(BaseModel):
     """Detailed model health information"""
     name: str
@@ -165,11 +155,7 @@ class DetectionResult(BaseModel):
     details: Dict = Field(default_factory=dict)
     warnings: List[str] = Field(default_factory=list)
 
-# (Keep your existing NetworkData, BatchRequest, BatchResult models)
 
-# =========================================================================
-# API Endpoints
-# =========================================================================
 @app.get("/model-health", response_model=List[ModelHealth])
 async def get_model_health():
     """Get detailed health status of all loaded models"""
@@ -196,9 +182,7 @@ async def refresh_models():
         logger.error(f"Model refresh failed: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
-# =========================================================================
-# Enhanced Detection Endpoints
-# =========================================================================
+
 @app.post("/detect-threat", response_model=DetectionResult)
 async def detect_threat(data: NetworkData):
     """Enhanced threat detection with model adapter"""
@@ -245,12 +229,6 @@ async def detect_threat(data: NetworkData):
         logger.error(f"Threat prediction failed: {str(e)}")
         raise HTTPException(status_code=422, detail=str(e))
 
-# (Similarly enhance your other endpoints: detect-anomaly, full-analysis, batch-analysis)
-
-# =========================================================================
-# Existing Middleware and Supporting Functions
-# =========================================================================
-# (Keep your existing middleware, CORS, OpenAPI customization, etc.)
 
 if __name__ == "__main__":
     import uvicorn
