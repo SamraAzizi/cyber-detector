@@ -19,3 +19,38 @@ class ModelOptimizer:
         with open(output_path, "wb") as f:
             f.write(onnx_model.SerializeToString())
         print(f"ONNX model saved to {output_path}")
+
+
+
+    @staticmethod
+    def benchmark(model_path: str, test_data: List[Dict], n_runs: int = 1000):
+        """Compare inference speed between pickle and ONNX models."""
+        # Load original model
+        model = joblib.load(model_path)
+        
+        # Time pickle model
+        start = time.time()
+        for _ in range(n_runs):
+            model.predict([list(test_data[0].values())])
+        pickle_time = time.time() - start
+
+        # Time ONNX model (if exists)
+        onnx_path = model_path.replace(".pkl", ".onnx")
+        if Path(onnx_path).exists():
+            from onnxruntime import InferenceSession
+            sess = InferenceSession(onnx_path)
+            input_name = sess.get_inputs()[0].name
+            
+            start = time.time()
+            for _ in range(n_runs):
+                sess.run(
+                    None, 
+                    {input_name: np.array([list(test_data[0].values())], dtype=np.float32)}
+                )
+            onnx_time = time.time() - start
+            print(f"Pickle: {pickle_time:.2f}s | ONNX: {onnx_time:.2f}s ({pickle_time/onnx_time:.1f}x faster)")
+        else:
+            print(f"Pickle model: {n_runs} predictions in {pickle_time:.2f}s")
+
+
+
