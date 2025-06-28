@@ -139,5 +139,32 @@ class Preprocessor:
         return df
 
 
-    
-    
+
+
+    def _apply_network_features(self, df: pd.DataFrame) -> pd.DataFrame:
+        """Vectorized network feature calculation"""
+        for feature in self.feature_config.get('network_features', []):
+            if feature == 'bytes_ratio':
+                df['bytes_ratio'] = df['src_bytes'] / (df['dst_bytes'].replace(0, 1))
+            elif feature == 'packet_rate':
+                df['packet_rate'] = df['src_pkts'] / (df['duration'].clip(lower=0.001))
+        return df
+
+
+
+    def _apply_protocol_features(self, df: pd.DataFrame) -> pd.DataFrame:
+        """Optimized protocol dummy creation"""
+        for proto_var, proto_name in self.protocol_mapping.items():
+            if proto_name in self.feature_config.get('protocols', []):
+                df[proto_name] = (df['protocol'] == proto_var).astype(int)
+        return df
+
+
+
+    def _scale_features(self, df: pd.DataFrame) -> pd.DataFrame:
+        """Safe numerical feature scaling"""
+        df[self.numerical_cols] = self.scaler.transform(df[self.numerical_cols])
+        return df
+
+
+
