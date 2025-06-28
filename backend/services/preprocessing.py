@@ -66,5 +66,44 @@ class Preprocessor:
         features.extend(self.feature_config.get('protocols', []))
         
         return features
+    
 
+
+
+    def preprocess(self, input_data: Union[Dict, pd.DataFrame]) -> np.ndarray:
+        """
+        Enhanced preprocessing with:
+        - Input type flexibility (dict or DataFrame)
+        - Input validation
+        - Memory efficiency
+        """
+        if not isinstance(input_data, pd.DataFrame):
+            try:
+                df = pd.DataFrame([input_data])
+            except Exception as e:
+                logger.error(f"Input conversion failed: {str(e)}")
+                raise ValueError("Input must be dict or DataFrame")
+        else:
+            df = input_data.copy()
+
+        # Validate required columns
+        self._validate_input(df)
+
+        # Feature engineering pipeline
+        try:
+            if 'timestamp' in df.columns:
+                df = self._apply_time_features(df)
+            
+            df = self._apply_network_features(df)
+            df = self._apply_protocol_features(df)
+            df = self._scale_features(df)
+            df = self._ensure_columns(df)
+            
+            return df[self.feature_names].values.astype(np.float32)
+            
+        except Exception as e:
+            logger.error(f"Preprocessing failed: {str(e)}")
+            raise RuntimeError("Feature engineering error")
+
+    
     
