@@ -38,3 +38,33 @@ class Preprocessor:
                 'network_features': ['bytes_ratio', 'packet_rate'],
                 'protocols': ['proto_tcp', 'proto_udp']
             }
+
+    def _initialize_feature_cache(self):
+        """Cache frequently used feature definitions"""
+        self.numerical_cols = ['duration', 'src_bytes', 'dst_bytes']
+        self.protocol_mapping = {
+            'tcp': 'proto_tcp',
+            'udp': 'proto_udp',
+            'icmp': 'proto_icmp'
+        }
+
+    def _get_feature_names(self) -> list:
+        """Generate complete feature names for SHAP explanations"""
+        features = []
+        features.extend(self.numerical_cols)
+        
+        # Add time features
+        if 'hour' in self.feature_config.get('time_features', []):
+            features.append('hour')
+        if 'day_of_week' in self.feature_config.get('time_features', []):
+            features.append('day_of_week')
+            
+        # Add network features
+        features.extend(self.feature_config.get('network_features', []))
+        
+        # Add protocol dummies
+        features.extend(self.feature_config.get('protocols', []))
+        
+        return features
+
+    
