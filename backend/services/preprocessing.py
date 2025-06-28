@@ -168,3 +168,31 @@ class Preprocessor:
 
 
 
+
+    def _ensure_columns(self, df: pd.DataFrame) -> pd.DataFrame:
+        """Ensure consistent output columns"""
+        for col in self.feature_names:
+            if col not in df.columns:
+                df[col] = 0  # Default fill for missing engineered features
+        return df
+
+
+
+    def get_feature_names(self) -> list:
+        """For dashboard SHAP explanations"""
+        return self.feature_names
+
+# Feature Documentation Template (add to backend/API_SPEC.md)
+"""
+## Expected Input Schema
+```json
+{
+    "timestamp": "2023-01-01T12:00:00",  // ISO-8601
+    "protocol": "tcp",                   // tcp/udp/icmp
+    "src_bytes": 1024,                   // uint32
+    "dst_bytes": 0,                      // uint32  
+    "duration": 0.1,                     // float (seconds)
+    "src_pkts": 10                       // uint32 (optional)
+}
+"""  
+
