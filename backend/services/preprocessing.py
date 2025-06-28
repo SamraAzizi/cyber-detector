@@ -104,6 +104,40 @@ class Preprocessor:
         except Exception as e:
             logger.error(f"Preprocessing failed: {str(e)}")
             raise RuntimeError("Feature engineering error")
+        
+
+    
+    def _validate_input(self, df: pd.DataFrame):
+        """Validate required columns and types"""
+        required = {
+            'timestamp': 'datetime64[ns]',
+            'protocol': 'object',
+            'src_bytes': 'int64',
+            'dst_bytes': 'int64',
+            'duration': 'float64'
+        }
+        
+        for col, dtype in required.items():
+            if col not in df.columns:
+                raise ValueError(f"Missing required column: {col}")
+            if not np.issubdtype(df[col].dtype, np.dtype(dtype)):
+                raise ValueError(f"Column {col} must be {dtype}")
+            
+
+            
+
+    def _apply_time_features(self, df: pd.DataFrame) -> pd.DataFrame:
+        """Optimized time feature extraction"""
+        ts = pd.to_datetime(df['timestamp'])
+        for feature in self.feature_config.get('time_features', []):
+            if feature == 'hour':
+                df['hour'] = ts.dt.hour
+            elif feature == 'day_of_week':
+                df['day_of_week'] = ts.dt.dayofweek
+            elif feature == 'is_weekend':
+                df['is_weekend'] = (ts.dt.dayofweek >= 5).astype(int)
+        return df
+
 
     
     
