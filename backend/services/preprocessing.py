@@ -66,5 +66,133 @@ class Preprocessor:
         features.extend(self.feature_config.get('protocols', []))
         
         return features
+    
+
+
+
+    def preprocess(self, input_data: Union[Dict, pd.DataFrame]) -> np.ndarray:
+        """
+        Enhanced preprocessing with:
+        - Input type flexibility (dict or DataFrame)
+        - Input validation
+        - Memory efficiency
+        """
+        if not isinstance(input_data, pd.DataFrame):
+            try:
+                df = pd.DataFrame([input_data])
+            except Exception as e:
+                logger.error(f"Input conversion failed: {str(e)}")
+                raise ValueError("Input must be dict or DataFrame")
+        else:
+            df = input_data.copy()
+
+        # Validate required columns
+        self._validate_input(df)
+
+        # Feature engineering pipeline
+        try:
+            if 'timestamp' in df.columns:
+                df = self._apply_time_features(df)
+            
+            df = self._apply_network_features(df)
+            df = self._apply_protocol_features(df)
+            df = self._scale_features(df)
+            df = self._ensure_columns(df)
+            
+            return df[self.feature_names].values.astype(np.float32)
+            
+        except Exception as e:
+            logger.error(f"Preprocessing failed: {str(e)}")
+            raise RuntimeError("Feature engineering error")
+        
 
     
+    def _validate_input(self, df: pd.DataFrame):
+        """Validate required columns and types"""
+        required = {
+            'timestamp': 'datetime64[ns]',
+            'protocol': 'object',
+            'src_bytes': 'int64',
+            'dst_bytes': 'int64',
+            'duration': 'float64'
+        }
+        
+        for col, dtype in required.items():
+            if col not in df.columns:
+                raise ValueError(f"Missing required column: {col}")
+            if not np.issubdtype(df[col].dtype, np.dtype(dtype)):
+                raise ValueError(f"Column {col} must be {dtype}")
+            
+
+            
+
+    def _apply_time_features(self, df: pd.DataFrame) -> pd.DataFrame:
+        """Optimized time feature extraction"""
+        ts = pd.to_datetime(df['timestamp'])
+        for feature in self.feature_config.get('time_features', []):
+            if feature == 'hour':
+                df['hour'] = ts.dt.hour
+            elif feature == 'day_of_week':
+                df['day_of_week'] = ts.dt.dayofweek
+            elif feature == 'is_weekend':
+                df['is_weekend'] = (ts.dt.dayofweek >= 5).astype(int)
+        return df
+
+
+
+
+    def _apply_network_features(self, df: pd.DataFrame) -> pd.DataFrame:
+        """Vectorized network feature calculation"""
+        for feature in self.feature_config.get('network_features', []):
+            if feature == 'bytes_ratio':
+                df['bytes_ratio'] = df['src_bytes'] / (df['dst_bytes'].replace(0, 1))
+            elif feature == 'packet_rate':
+                df['packet_rate'] = df['src_pkts'] / (df['duration'].clip(lower=0.001))
+        return df
+
+
+
+    def _apply_protocol_features(self, df: pd.DataFrame) -> pd.DataFrame:
+        """Optimized protocol dummy creation"""
+        for proto_var, proto_name in self.protocol_mapping.items():
+            if proto_name in self.feature_config.get('protocols', []):
+                df[proto_name] = (df['protocol'] == proto_var).astype(int)
+        return df
+
+
+
+    def _scale_features(self, df: pd.DataFrame) -> pd.DataFrame:
+        """Safe numerical feature scaling"""
+        df[self.numerical_cols] = self.scaler.transform(df[self.numerical_cols])
+        return df
+
+
+
+
+    def _ensure_columns(self, df: pd.DataFrame) -> pd.DataFrame:
+        """Ensure consistent output columns"""
+        for col in self.feature_names:
+            if col not in df.columns:
+                df[col] = 0  # Default fill for missing engineered features
+        return df
+
+
+
+    def get_feature_names(self) -> list:
+        """For dashboard SHAP explanations"""
+        return self.feature_names
+
+# Feature Documentation Template (add to backend/API_SPEC.md)
+"""
+## Expected Input Schema
+```json
+{
+    "timestamp": "2023-01-01T12:00:00",  // ISO-8601
+    "protocol": "tcp",                   // tcp/udp/icmp
+    "src_bytes": 1024,                   // uint32
+    "dst_bytes": 0,                      // uint32  
+    "duration": 0.1,                     // float (seconds)
+    "src_pkts": 10                       // uint32 (optional)
+}
+"""  
+
