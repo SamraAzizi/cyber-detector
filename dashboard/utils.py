@@ -68,3 +68,45 @@ class DashboardUtils:
                     logger.error("Max retries reached for API request")
                     return [{"error": str(e)}] * len(packets)
                 
+
+
+
+    def explain_prediction(self, raw_packet: Dict) -> Dict:
+        """
+        Enhanced SHAP explanation with:
+        - Preprocessing integration
+        - Feature name alignment
+        - Error handling
+        Returns:
+            {
+                "prediction": 0.92,
+                "features": [
+                    {
+                        "name": "src_bytes",
+                        "value": 1024,
+                        "shap": 0.15,
+                        "scaled_value": 1.2  # Added scaled value
+                    },
+                    ...
+                ],
+                "feature_importance": {
+                    "src_bytes": 0.32,
+                    ...
+                }
+            }
+        """
+        try:
+            # Preprocess input (matches training exactly)
+            processed = self.preprocessor.preprocess(raw_packet)
+            
+            # Get prediction probability
+            proba = self.model.predict_proba(processed)[0][1]
+            
+            # Calculate SHAP values
+            shap_values = self.explainer.shap_values(processed)[1][0]
+            
+            # Get feature values (original + scaled)
+            feature_values = processed[0]
+            
+            # Format for dashboard
+            
