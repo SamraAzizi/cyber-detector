@@ -109,4 +109,31 @@ class DashboardUtils:
             feature_values = processed[0]
             
             # Format for dashboard
+
+            return {
+                "prediction": float(proba),
+                "features": [
+                    {
+                        "name": name,
+                        "original_value": raw_packet.get(name.split('_')[0], 0),  # Get base feature
+                        "scaled_value": float(val),
+                        "shap": float(shap_val)
+                    }
+                    for name, val, shap_val in zip(
+                        self._feature_names,
+                        feature_values,
+                        shap_values
+                    )
+                ],
+                "feature_importance": self._get_global_importance()
+            }
             
+            
+        except Exception as e:
+            logger.error(f"Explanation failed: {str(e)}")
+            return {
+                "error": str(e),
+                "prediction": 0.0,
+                "features": []
+            }
+
