@@ -137,3 +137,28 @@ class DashboardUtils:
                 "features": []
             }
 
+
+
+            
+    def _get_global_importance(self) -> Dict[str, float]:
+        """Get model-level feature importance for context"""
+        if hasattr(self.model, 'feature_importances_'):
+            return {
+                name: float(imp)
+                for name, imp in zip(
+                    self._feature_names,
+                    self.model.feature_importances_
+                )
+            }
+        return {}
+    
+
+    
+
+    def get_api_health(self) -> Dict:
+        """Check if backend API is available"""
+        try:
+            response = self._session.get(
+                f"{self.api_url}/health",
+                timeout=2.0
+            )
