@@ -162,3 +162,35 @@ class DashboardUtils:
                 f"{self.api_url}/health",
                 timeout=2.0
             )
+            return {
+                "status": "healthy" if response.ok else "unhealthy",
+                "response_time": response.elapsed.total_seconds()
+            }
+        
+        except Exception as e:
+            return {
+                "status": "offline",
+                "error": str(e)
+            }
+        
+
+        
+
+# Legacy function with deprecation warning
+def get_predictions(text: str) -> Dict:
+    logger.warning("Deprecated: Use DashboardUtils class instead")
+    API_URL = "http://backend:8000/predict"
+    
+    try:
+        response = requests.post(
+            API_URL,
+            json={"text": text},
+            timeout=3.0
+        )
+        if response.ok:
+            return response.json()
+        return {"label": "API Error", "confidence": 0, "status_code": response.status_code}
+    except Exception as e:
+        return {"label": "Connection Error", "confidence": 0, "error": str(e)}
+
+
