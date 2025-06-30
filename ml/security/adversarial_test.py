@@ -42,3 +42,51 @@ class AdversarialTester:
         self.classifier = SklearnClassifier(model=self.model)
         self.load_config(config_path)
         
+
+
+    def load_config(self, config_path: str):
+        """Load attack parameters from JSON config"""
+        try:
+            with open(config_path) as f:
+                self.config = json.load(f)
+        except FileNotFoundError:
+            logger.warning("No security config found, using defaults")
+            self.config = {
+                "attacks": {
+                    "fgsm": {"eps": 0.1},
+                    "carlini": {"confidence": 0.5},
+                    "deepfool": {"max_iter": 50}
+                },
+                "thresholds": {
+                    "min_accuracy": 0.7,
+                    "max_success_rate": 0.3
+                }
+            }
+
+
+
+    def run_all_tests(
+        self,
+        X_val: np.ndarray,
+        y_val: np.ndarray,
+        output_dir: str = "ml/security/reports"
+    ) -> Dict[str, Dict]:
+        """
+        Execute all configured attack tests.
+        Returns:
+            Dictionary of attack reports
+        """
+        Path(output_dir).mkdir(parents=True, exist_ok=True)
+        reports = {}
+        
+        for attack_name in self.config["attacks"]:
+            report = self.run_test(
+                attack_name=attack_name,
+                X_val=X_val,
+                y_val=y_val,
+                output_dir=output_dir
+            )
+            reports[attack_name] = report
+            
+        self.generate_summary(reports, output_dir)
+        return reports
