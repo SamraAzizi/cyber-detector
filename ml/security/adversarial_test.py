@@ -133,3 +133,50 @@ class AdversarialTester:
                     output_dir=output_dir
                 )
                 
+            # Evaluate against thresholds
+            metrics["passed"] = (
+                metrics["accuracy"] >= self.config["thresholds"]["min_accuracy"] and
+                metrics["success_rate"] <= self.config["thresholds"]["max_success_rate"]
+            )
+            
+            logger.info(
+                f"{attack_name.upper()} Test - "
+                f"Accuracy: {metrics['accuracy']:.2%}, "
+                f"Success Rate: {metrics['success_rate']:.2%}"
+            )
+            
+            return metrics
+            
+        except Exception as e:
+            logger.error(f"{attack_name} attack failed: {str(e)}")
+            return {"error": str(e)}
+
+
+
+    def _init_attack(self, attack_name: str):
+        """Initialize attack based on config"""
+        params = self.config["attacks"][attack_name]
+        
+        if attack_name == "fgsm":
+            return FastGradientMethod(
+                estimator=self.classifier,
+                eps=params["eps"]
+            )
+        elif attack_name == "carlini":
+            return CarliniL2Method(
+                classifier=self.classifier,
+                confidence=params["confidence"]
+            )
+        elif attack_name == "deepfool":
+            return DeepFool(
+                classifier=self.classifier,
+                max_iter=params["max_iter"]
+            )
+        elif attack_name == "pgd":
+            return ProjectedGradientDescent(
+                estimator=self.classifier,
+                eps=params["eps"],
+                eps_step=params["eps_step"]
+            )
+        else:
+            raise ValueError(f"Unknown attack type: {attack_name}")
