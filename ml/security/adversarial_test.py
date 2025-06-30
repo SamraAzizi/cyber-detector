@@ -1,20 +1,44 @@
-from art.attacks.evasion import FastGradientMethod
+from art.attacks.evasion import (
+    FastGradientMethod,
+    CarliniL2Method,
+    DeepFool,
+    ProjectedGradientDescent
+)
 from art.estimators.classification import SklearnClassifier
-from sklearn.metrics import accuracy_score
+from sklearn.metrics import (
+    accuracy_score,
+    precision_score,
+    recall_score,
+    confusion_matrix
+)
 import joblib
 import pandas as pd
+import numpy as np
+import logging
+from pathlib import Path
+from typing import Dict, Tuple
+import json
+import warnings
+warnings.filterwarnings('ignore')  # Suppress ART warnings
 
-def run_adversarial_test(model_path, X_val_path, y_val_path):
-    model = joblib.load(model_path)
-    X_val = pd.read_csv(X_val_path).values
-    y_val = pd.read_csv(y_val_path).values
 
-    classifier = SklearnClassifier(model=model)
-    attack = FastGradientMethod(estimator=classifier, eps=0.2)
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
-    X_adv = attack.generate(X_val)
-    y_pred = classifier.predict(X_adv)
-    y_pred_labels = y_pred.argmax(axis=1) if y_pred.ndim > 1 else y_pred
+class AdversarialTester:
 
-    acc = accuracy_score(y_val, y_pred_labels)
-    print(f"Adversarial Accuracy: {acc:.4f}")
+    def __init__(self, model_path: str, config_path: str = "ml/configs/security.json"):
+        """
+        Enhanced adversarial testing with:
+        - Multiple attack types
+        - Detailed reporting
+        - Defense recommendations
+        Args:
+            model_path: Path to trained model (.pkl)
+            config_path: Security testing parameters
+        """
+        self.model = joblib.load(model_path)
+        self.classifier = SklearnClassifier(model=self.model)
+        self.load_config(config_path)
+        
