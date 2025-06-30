@@ -180,3 +180,36 @@ class AdversarialTester:
             )
         else:
             raise ValueError(f"Unknown attack type: {attack_name}")
+        
+    
+
+    def _save_attack_samples(
+        self,
+        X_adv: np.ndarray,
+        y_pred: np.ndarray,
+        attack_name: str,
+        output_dir: str
+    ):
+        """Save adversarial examples for analysis"""
+        timestamp = pd.Timestamp.now().strftime("%Y%m%d_%H%M%S")
+        filename = Path(output_dir) / f"{attack_name}_{timestamp}.parquet"
+        
+        pd.DataFrame(
+            np.hstack([X_adv, y_pred.reshape(-1, 1)]),
+            columns=[f"feat_{i}" for i in range(X_adv.shape[1])] + ["prediction"]
+        ).to_parquet(filename)
+        
+        logger.info(f"Saved adversarial samples to {filename}")
+
+    def generate_summary(self, reports: Dict, output_dir: str):
+        """Generate markdown summary report"""
+        summary = ["# Adversarial Test Summary", "## Attack Performance\n"]
+        
+        for attack_name, metrics in reports.items():
+            summary.append(
+                f"- **{attack_name.upper()}**: "
+                f"Accuracy={metrics.get('accuracy', 0):.2%}, "
+                f"Success Rate={metrics.get('success_rate', 0):.2%}, "
+                f"Passed={'✅' if metrics.get('passed', False) else '❌'}"
+            )
+            
