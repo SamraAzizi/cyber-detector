@@ -20,3 +20,31 @@ class SecurityMiddleware(BaseHTTPMiddleware):
             raise HTTPException(429, "Too many requests")
 
         
+        # 2. Block suspicious user agents
+        if "sqlmap" in request.headers.get("user-agent", "").lower():
+            self.logger.warning(f"Blocked malicious UA from {client_ip}")
+            raise HTTPException(403, "Forbidden")
+
+        response = await call_next(request)
+        
+
+        # 3. Security headers
+        response.headers.update({
+            "X-Content-Type-Options": "nosniff",
+            "X-Frame-Options": "DENY",
+            "Content-Security-Policy": "default-src 'self'"
+        })
+        
+        return response
+    
+    
+
+    def _exceeds_rate_limit(self, ip: str) -> bool:
+        # Implement Redis-based counter in production
+        return False  # Placeholder
+
+# In app.py:
+# app.add_middleware(SecurityMiddleware)
+# app.add_middleware(HTTPSRedirectMiddleware)
+
+        
