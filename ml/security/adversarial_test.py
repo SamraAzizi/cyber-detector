@@ -90,3 +90,46 @@ class AdversarialTester:
             
         self.generate_summary(reports, output_dir)
         return reports
+    
+
+
+    def run_test(
+        self,
+        attack_name: str,
+        X_val: np.ndarray,
+        y_val: np.ndarray,
+        output_dir: str = None
+    ) -> Dict:
+        """
+        Execute single attack test with:
+        - Attack generation
+        - Robustness metrics
+        - Example adversarial samples
+        """
+        try:
+            # Initialize attack
+            attack = self._init_attack(attack_name)
+            
+            # Generate adversarial examples
+            X_adv = attack.generate(X_val)
+            y_pred = self.classifier.predict(X_adv)
+            y_pred_labels = y_pred.argmax(axis=1) if y_pred.ndim > 1 else y_pred
+            
+            # Calculate metrics
+            metrics = {
+                "accuracy": accuracy_score(y_val, y_pred_labels),
+                "precision": precision_score(y_val, y_pred_labels, zero_division=0),
+                "recall": recall_score(y_val, y_pred_labels, zero_division=0),
+                "success_rate": 1 - accuracy_score(y_val, y_pred_labels),
+                "confusion_matrix": confusion_matrix(y_val, y_pred_labels).tolist()
+            }
+            
+            # Save adversarial examples
+            if output_dir:
+                self._save_attack_samples(
+                    X_adv=X_adv,
+                    y_pred=y_pred_labels,
+                    attack_name=attack_name,
+                    output_dir=output_dir
+                )
+                
