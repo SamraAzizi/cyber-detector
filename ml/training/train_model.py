@@ -101,4 +101,48 @@ class ModelTrainer:
 
 
 
+    def _validate_data(self, X: pd.DataFrame, y: pd.Series) -> None:
+        """Validate dataset schema and integrity."""
+        if len(X) != len(y):
+            raise ValueError("Feature/target length mismatch")
+        if X.isnull().any().any():
+            raise ValueError("NaN values detected in features")
+        if y.isnull().any():
+            raise ValueError("NaN values in labels")
+
+    # 4. Model Training ========================================================
+    def train_models(self) -> Tuple[str, Any, Dict[str, float]]:
+        """Train and evaluate all configured models.
+        
+        Returns:
+            Tuple of (best_model_name, model_instance, metrics_dict)
+        """
+        X_train, y_train, X_val, y_val = self.load_data()
+        evaluator = ModelEvaluator()
+        best_score = -1
+        results = {}
+
+        if self.retrain:
+            self._generate_reference_stats(X_train)
+
+        for model_name, model_class in self.models.items():
+            try:
+                logger.info(f"Training {model_name}...")
+                model = self._get_model_instance(model_name)
+                model.fit(X_train, y_train)
+
+                metrics = evaluator.evaluate(model, X_val, y_val)
+                results[model_name] = metrics
+
+                if metrics["f1"] > best_score:
+                    best_score = metrics["f1"]
+                    self.best_model = (model_name, model, metrics)
+
+            except Exception as e:
+                logger.error(f"Failed to train {model_name}: {str(e)}")
+
+        self._save_results(results)
+        return self.best_model
+    
+
         
