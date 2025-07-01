@@ -1,0 +1,8 @@
+tracking_uri: http://mlflow-server:5000
+experiment_name: cyber_detector
+registered_model_name: threat_classifier
+artifacts:
+  - metrics
+  - params
+  - models
+  - plots
