@@ -201,6 +201,9 @@ class AdversarialTester:
         
         logger.info(f"Saved adversarial samples to {filename}")
 
+
+
+
     def generate_summary(self, reports: Dict, output_dir: str):
         """Generate markdown summary report"""
         summary = ["# Adversarial Test Summary", "## Attack Performance\n"]
@@ -212,4 +215,26 @@ class AdversarialTester:
                 f"Success Rate={metrics.get('success_rate', 0):.2%}, "
                 f"Passed={'✅' if metrics.get('passed', False) else '❌'}"
             )
+
+           
+        # Add defense recommendations
+        summary.extend([
+            "\n## Recommended Defenses",
+            "- Input sanitization (range checks, type validation)",
+            "- Adversarial training with generated samples",
+            "- Model ensemble for robustness",
+            "- Gradient masking techniques"
+        ])
+        
+        report_path = Path(output_dir) / "summary.md"
+        with open(report_path, "w") as f:
+            f.write("\n".join(summary))
+            
+        logger.info(f"Generated summary report at {report_path}")
+
+# Example usage:
+# tester = AdversarialTester(model_path="ml/models/rf_model.pkl")
+# X_val = pd.read_csv("data/validation_features.csv").values
+# y_val = pd.read_csv("data/validation_labels.csv").values.values.ravel()
+# reports = tester.run_all_tests(X_val, y_val)
             
