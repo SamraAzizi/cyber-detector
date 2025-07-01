@@ -72,4 +72,33 @@ class ModelTrainer:
         self.retrain_reason = retrain_reason
 
 
+
+    # 3. Data Loading ==========================================================
+    def load_data(self) -> Tuple[pd.DataFrame, pd.Series, pd.DataFrame, pd.Series]:
+        """Load and validate processed datasets.
+        
+        Returns:
+            Tuple of (X_train, y_train, X_val, y_val)
+            
+        Raises:
+            SystemExit: If data loading fails
+        """
+        try:
+            X_train = pd.read_csv("ml/datasets/processed/X_train.csv")
+            y_train = pd.read_csv("ml/datasets/processed/y_train.csv").squeeze()
+            X_val = pd.read_csv("ml/datasets/processed/X_val.csv")
+            y_val = pd.read_csv("ml/datasets/processed/y_val.csv").squeeze()
+
+            self._validate_data(X_train, y_train)
+            self._validate_data(X_val, y_val)
+
+            logger.info(f"Data loaded - Train: {X_train.shape}, Val: {X_val.shape}")
+            return X_train, y_train, X_val, y_val
+
+        except Exception as e:
+            logger.error(f"Data loading failed: {str(e)}")
+            sys.exit(1)
+
+
+
         
