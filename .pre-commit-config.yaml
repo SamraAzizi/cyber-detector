@@ -38,6 +38,4 @@ repos:
     rev: v2.3.0
     hooks:
       - id: conventional-commits-lint
-        args: [--config=.commitlintrc.yaml]\
-
-        
+        args: [--config=.commitlintrc.yaml]
