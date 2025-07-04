@@ -1,23 +1,40 @@
-# Cyber Threat Detection - Machine Learning Pipeline
+# 🛡️ Cyber Threat Detection - ML Pipeline
 
-## 📂 Directory Structure
+![Python Version](https://img.shields.io/badge/python-3.10%2B-blue)
+![MLflow](https://img.shields.io/badge/MLflow-2.3%2B-orange)
+![License](https://img.shields.io/badge/license-MIT-green)
 
-        ml/
-        ├── configs/ # Configuration files
-        │ ├── features.json # Feature definitions
-        │ └── training.yml # Hyperparameters
-        ├── datasets/ # Data artifacts
-        │ ├── processed/ # Cleaned datasets
-        │ └── raw/ # Original data (immutable)
-        ├── training/ # Model development
-        │ ├── train_model.py # Main training script
-        │ └── hyperparameter_tuning.py
-        ├── evaluation/ # Model validation
-        │ ├── evaluate_model.py
-        │ └── adversarial_testing.py
-        ├── models/ # Serialized models
-        │ ├── production/ # Deployed models
-        │ └── experimental/ # Candidate models
-        └── monitoring/ # Production monitoring
-        ├── drift_detection.py
-        └── performance_logging.py  
+> Machine learning pipeline for detecting network anomalies and cyber threats
+
+## 📂 Repository Structure
+
+```text
+ml/
+├── configs/               # Configuration files
+│   ├── features.json      # Feature definitions
+│   └── training.yml       # Hyperparameters
+├── datasets/              # Data artifacts
+│   ├── processed/         # Cleaned datasets
+│   └── raw/               # Original data (immutable)
+├── training/              # Model development
+│   ├── train_model.py     # Main training script
+│   └── hyperparameter_tuning.py
+├── evaluation/            # Model validation
+│   ├── evaluate_model.py
+│   └── adversarial_testing.py
+├── models/                # Serialized models
+│   ├── production/        # Deployed models
+│   └── experimental/      # Candidate models
+└── monitoring/            # Production monitoring
+    ├── drift_detection.py
+    └── performance_logging.py
+```
+
+## 🚀 Quick Start
+
+### Prerequisites
+```bash
+conda create -n cyber-ml python=3.10
+conda activate cyber-ml
+pip install -r requirements-ml.txt
+```
