@@ -38,3 +38,22 @@ conda create -n cyber-ml python=3.10
 conda activate cyber-ml
 pip install -r requirements-ml.txt
 ```
+
+### Training Example
+```bash
+python ml/training/train_model.py \
+  --data ml/datasets/processed/v1.parquet \
+  --config ml/configs/production.yml \
+  --output-dir ml/models/experimental/
+```
+## 🔧 Key Components
+### Data Processing
+```python
+from ml.preprocessing import CyberDataProcessor
+
+processor = CyberDataProcessor()
+df_clean = processor.fit_transform(raw_data)
+```
+
+
+
