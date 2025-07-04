@@ -55,5 +55,15 @@ processor = CyberDataProcessor()
 df_clean = processor.fit_transform(raw_data)
 ```
 
+### Model Training
+```python
+from ml.training import ModelTrainer
+
+trainer = ModelTrainer()
+best_model = trainer.train(
+    data_path="ml/datasets/processed/train.parquet",
+    model_type="xgboost"
+)
+```
 
 
