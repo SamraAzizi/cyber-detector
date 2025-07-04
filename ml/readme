@@ -76,4 +76,15 @@ protocol    |	category  |	tcp, udp, or icmp	   | tcp
 payload_len |	int	Packet| payload length in bytes| 1024
 is_malicious|	bool	  | Ground truth label	   | True
 
+## 🧠 Model Performance
+Latest Production Model Metrics:
+
+Metric            Value
+------------------------
+Precision          0.96
+Recall	           0.93
+F1 Score           0.945
+AUC-ROC            0.988
+Inference Latency  2.3ms
+
 
