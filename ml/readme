@@ -65,5 +65,15 @@ best_model = trainer.train(
     model_type="xgboost"
 )
 ```
+## 📊 Data Schema
+
+
+Field       |	Type	  | Description	           |  Example
+---------------------------------------------------------------
+timestamp   |	datetime  |	Event timestamp (UTC)  | 2023-08-01 14:30:00
+src_ip      |	string	  | Hashed source IP       | (SHA-256)	ip_5f3a...
+protocol    |	category  |	tcp, udp, or icmp	   | tcp
+payload_len |	int	Packet| payload length in bytes| 1024
+is_malicious|	bool	  | Ground truth label	   | True
 
 
