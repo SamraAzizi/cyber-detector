@@ -88,3 +88,21 @@ AUC-ROC            0.988
 Inference Latency  2.3ms
 
 
+## 💻 Development
+### Testing
+```bash
+pytest tests/ --cov=ml --cov-report=xml
+```
+### Code Quality
+```bash
+# Run linters
+black --check ml/
+ruff check ml/
+mypy ml/
+
+# Auto-format
+pre-commit run --all-files
+```
+
+
+
